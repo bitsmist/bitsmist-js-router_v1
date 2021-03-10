@@ -310,7 +310,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		let url = RouteOrganizer._buildUrl(routeInfo, component);
-		RouteOrganizer.__jump(component, url);
+		RouteOrganizer.__jump(url);
 
 	}
 
@@ -385,7 +385,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		if (options["jump"] || !newRouteInfo["name"] || ( curRouteInfo["name"] != newRouteInfo["name"]) )
 		{
-			RouteOrganizer._jump(component, url);
+			RouteOrganizer.__jump(url);
 			return;
 		}
 

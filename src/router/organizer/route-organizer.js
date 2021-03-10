@@ -124,53 +124,6 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}
 
 	}
-
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Load the spec file for this page.
-	 *
-	 * @param	{String}		specName			Spec name.
-	 * @param	{String}		path				Path to spec.
-	 *
-	 * @return  {Promise}		Promise.
-	 */
-	static _loadSpec(specName, path)
-	{
-
-//		let urlCommon = BITSMIST.v1.Util.concatPath([path, "common.js"]);
-		let url = BITSMIST.v1.Util.concatPath([path, specName + ".js"]);
-		let spec;
-//		let specCommon;
-		let specMerged;
-		let promises = [];
-
-		// Load specs
-//		promises.push(RouteOrganizer.__loadSpecFile(urlCommon, "{}"));
-		promises.push(RouteOrganizer.__loadSpecFile(url));
-
-		return Promise.all(promises).then((result) => {
-			// Convert to json
-			try
-			{
-//				specCommon = JSON.parse(result[0]);
-//				spec = JSON.parse(result[1]);
-				spec = JSON.parse(result[0]);
-			}
-			catch(e)
-			{
-				//throw new SyntaxError(`Illegal json string. url=${(specCommon ? url : urlCommon)}`);
-				throw new SyntaxError(`Illegal json string. url=${url}`);
-			}
-//			specMerged = BITSMIST.v1.Util.deepMerge(specCommon, spec);
-
-			//return specMerged;
-
-			return spec;
-		});
-
-	}
-
 	// -------------------------------------------------------------------------
 
 	/**
@@ -398,27 +351,80 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Load spec file.
+	 * Load a spec and init.
 	 *
-	 * @param	{String}		url					Spec file url.
-	 * @param	{String}		defaultResponse		Response when error.
+	 * @param	{Component}		component			Component.
+	 * @param	{String}		specName			Spec name.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static __initSpec(component, specName)
+	{
+
+		if (specName && !component._specs[specName])
+		{
+			return Promise.resolve().then(() => {
+				if (!component._specs[specName])
+				{
+					return RouteOrganizer.__loadSpec(specName, component.settings.get("system.specPath")).then((spec) => {;
+						component._specs[specName] = spec;
+					});
+				}
+			}).then(() => {
+				return component.callOrganizers("afterSpecLoad", component._specs[specName]);
+			}).then(() => {
+				return component.trigger("afterSpecLoad", component, {"spec":component._specs[component._routeInfo["specName"]]});
+			});
+		}
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Load the spec file for this page.
+	 *
+	 * @param	{String}		specName			Spec name.
+	 * @param	{String}		path				Path to spec.
 	 *
 	 * @return  {Promise}		Promise.
 	 */
-	static __loadSpecFile(url, defaultResponse)
+	static __loadSpec(specName, path)
 	{
 
-		console.debug(`RouteOrganizer.__loadSpec(): Loading spec file. url=${url}`);
+//		let urlCommon = BITSMIST.v1.Util.concatPath([path, "common.js"]);
+		let url = BITSMIST.v1.Util.concatPath([path, specName + ".js"]);
+		let spec;
+//		let specCommon;
+//		let specMerged;
+		let promises = [];
 
-		return BITSMIST.v1.AjaxUtil.ajaxRequest({"url":url, "method":"GET"}).then((xhr) => {
-			console.debug(`RouteOrganizer.__loadSpec(): Loaded spec file. url=${url}`);
+		console.debug(`RouteOrganizer._loadSpec(): Loading spec file. url=${url}`);
 
-			return xhr.responseText;
-		}).catch((xhr) => {
-			if (defaultResponse)
+		// Load specs
+		//promises.push(BITSMIST.v1.AjaxUtil.ajaxRequest({"url":urlCommon, "method":"GET"});
+		promises.push(BITSMIST.v1.AjaxUtil.ajaxRequest({"url":url, "method":"GET"});
+
+		return Promise.all(promises).then((result) => {
+			// Convert to json
+			try
 			{
-				return defaultResponse;
+				console.debug(`RouteOrganizer.__loadSpec(): Loaded spec file. url=${url}`);
+
+//				specCommon = JSON.parse(result[0]);
+//				spec = JSON.parse(result[1]);
+				spec = JSON.parse(result[0]);
 			}
+			catch(e)
+			{
+				//throw new SyntaxError(`Illegal json string. url=${(specCommon ? url : urlCommon)}`);
+				throw new SyntaxError(`Illegal json string. url=${url}`);
+			}
+//			specMerged = BITSMIST.v1.Util.deepMerge(specCommon, spec);
+
+			//return specMerged;
+
+			return spec;
 		});
 
 	}
@@ -515,37 +521,6 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 						return component._components[componentName].trigger("afterPopState", component);
 					}
 				});
-			});
-		}
-
-	}
-
-	// -----------------------------------------------------------------------------
-
-	/**
-	 * Load a spec and init.
-	 *
-	 * @param	{Component}		component			Component.
-	 * @param	{String}		specName			Spec name.
-	 *
-	 * @return 	{Promise}		Promise.
-	 */
-	static __initSpec(component, specName)
-	{
-
-		if (specName && !component._specs[specName])
-		{
-			return Promise.resolve().then(() => {
-				if (!component._specs[specName])
-				{
-					return RouteOrganizer._loadSpec(specName, component.settings.get("system.specPath")).then((spec) => {;
-						component._specs[specName] = spec;
-					});
-				}
-			}).then(() => {
-				return component.callOrganizers("afterSpecLoad", component._specs[specName]);
-			}).then(() => {
-				return component.trigger("afterSpecLoad", component, {"spec":component._specs[component._routeInfo["specName"]]});
 			});
 		}
 

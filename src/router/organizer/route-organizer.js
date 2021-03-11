@@ -402,8 +402,8 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		console.debug(`RouteOrganizer._loadSpec(): Loading spec file. url=${url}`);
 
 		// Load specs
-		//promises.push(BITSMIST.v1.AjaxUtil.ajaxRequest({"url":urlCommon, "method":"GET"});
-		promises.push(BITSMIST.v1.AjaxUtil.ajaxRequest({"url":url, "method":"GET"});
+		//promises.push(BITSMIST.v1.AjaxUtil.ajaxRequest({"url":urlCommon, "method":"GET"}));
+		promises.push(BITSMIST.v1.AjaxUtil.ajaxRequest({"url":url, "method":"GET"}));
 
 		return Promise.all(promises).then((result) => {
 			// Convert to json
@@ -413,12 +413,19 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 //				specCommon = JSON.parse(result[0]);
 //				spec = JSON.parse(result[1]);
-				spec = JSON.parse(result[0]);
+				spec = JSON.parse(result[0].responseText);
 			}
 			catch(e)
 			{
-				//throw new SyntaxError(`Illegal json string. url=${(specCommon ? url : urlCommon)}`);
-				throw new SyntaxError(`Illegal json string. url=${url}`);
+				if (e instanceof SyntaxError)
+				{
+					//throw new SyntaxError(`Illegal json string. url=${(specCommon ? url : urlCommon)}`);
+					throw new SyntaxError(`Illegal json string. url=${url}, message=${e.message}`);
+				}
+				else
+				{
+					throw e;
+				}
 			}
 //			specMerged = BITSMIST.v1.Util.deepMerge(specCommon, spec);
 

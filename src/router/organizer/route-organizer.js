@@ -235,14 +235,15 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		options = Object.assign({}, options);
 		options["pushState"] = ( options["pushState"] !== undefined ? options["pushState"] : true );
+
 		let url = RouteOrganizer._buildUrl(routeInfo, component);
 		let curRouteInfo = Object.assign({}, component._routeInfo);
 		let newRouteInfo = RouteOrganizer.__loadRouteInfo(component, url);
-		component._routeInfo = RouteOrganizer.__loadRouteInfo(component, url);
+		component._routeInfo = newRouteInfo;
 
 		if (options["jump"] || !newRouteInfo["name"] || ( curRouteInfo["name"] != newRouteInfo["name"]) )
 		{
-			RouteOrganizer._jump(component, url);
+			RouteOrganizer._jump(component, {"url":url});
 			return;
 		}
 

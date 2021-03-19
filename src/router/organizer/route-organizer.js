@@ -22,6 +22,28 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	// -------------------------------------------------------------------------
 
 	/**
+	 * Global init.
+	 */
+	static globalInit()
+	{
+
+		RouteOrganizer.__skipPopstate = false;
+
+		// Catch if this page is loaded to prevent safari from extra popstate handling.
+		// Safari fires popstate when navigate back from different document context.
+		let ua = window.navigator.userAgent.toLowerCase()
+		if (ua.indexOf('safari') > -1 && ua.indexOf('chrome') == -1)
+		{
+			window.addEventListener("DOMContentLoaded", (e) => {
+				RouteOrganizer.__skipPopstate = true;
+			});
+		}
+
+	}
+
+	// -------------------------------------------------------------------------
+
+	/**
 	 * Init.
 	 *
 	 * @param	{Object}		conditions			Conditions.
@@ -49,6 +71,11 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		component._routes = [];
 		component._specs = {};
 
+		// Init popstate handler
+		RouteOrganizer.__initPopState(component);
+
+		// Set state on the first page
+		history.replaceState(RouteOrganizer.__getState("connect"), null, null);
 	}
 
 	// -------------------------------------------------------------------------
@@ -247,10 +274,10 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			return;
 		}
 
-		Promise.resolve().then(() => {
+		return Promise.resolve().then(() => {
 			if (options["pushState"])
 			{
-				history.pushState(RouteOrganizer.__getDefaultState("_open.pushState"), null, url);
+				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, url);
 			}
 		}).then(() => {
 			if ( curRouteInfo["specName"] != newRouteInfo["specName"] )
@@ -267,7 +294,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			if (routeInfo["dispUrl"])
 			{
 				// Replace url
-				history.replaceState(RouteOrganizer.__getDefaultState("_open.dispUrl"), null, routeInfo["dispUrl"]);
+				history.replaceState(RouteOrganizer.__getState("_open.dispUrl", window.history.state), null, routeInfo["dispUrl"]);
 			}
 		});
 
@@ -303,7 +330,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		let componentName = component._routeInfo["componentName"];
-		if (component._components[componentName])
+		if (component._components && component._components[componentName])
 		{
 			return component._components[componentName].refresh({"sender":component, "pushState":false});
 		}
@@ -342,7 +369,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static _replace(component, routeInfo, options)
 	{
 
-		history.replaceState(RouteOrganizer.__getDefaultState("replaceRoute"), null, RouteOrganizer._buildUrl(routeInfo, component));
+		history.replaceState(RouteOrganizer.__getState("replaceRoute", window.history.state), null, RouteOrganizer._buildUrl(routeInfo, component));
 		component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
 
 	}
@@ -508,8 +535,10 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		if (window.history && window.history.pushState){
 			window.addEventListener("popstate", (e) => {
-				if (!e.state)
+				if (RouteOrganizer.__skipPopstate)
 				{
+					console.warn("Skipping popstate handling since this page is loaded.");
+					RouteOrganizer.__skipPopstate = false;
 					return;
 				}
 
@@ -539,14 +568,23 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	/**
 	 * Return history state.
 	 *
-	 * @param	{String}		msg					Message to store in state..
+	 * @param	{String}		msg					Message to store in state.
 	 *
 	 * @return	{String}		State.
 	 */
-	static __getDefaultState(msg)
+	static __getState(msg, options)
 	{
 
-		return msg +  ":" + window.location.href;
+		let newState = {
+			"msg": msg,
+		};
+
+		if (options)
+		{
+			newState = Object.assign({}, options, newState);
+		}
+
+		return newState;
 
 	}
 

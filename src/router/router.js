@@ -60,12 +60,6 @@ Router.prototype.start = function(settings)
 	return BITSMIST.v1.Component.prototype.start.call(this, settings).then(() => {
 		this.changeState("routing");
 
-		// Set state on the first page
-		history.replaceState(RouteOrganizer.__getDefaultState("connect"), null, null);
-
-		// Init popstate handler
-		RouteOrganizer.__initPopState(this);
-
 		// Get settings from attributes
 		let path = this.getAttribute("data-specpath") || "";
 		if (path)

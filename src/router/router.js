@@ -48,8 +48,9 @@ Router.prototype.start = function(settings)
 
 	// Defaults
 	let defaults = {
-		"name": "Router",
-		"autoSetup": false,
+		"name":			"Router",
+		"autoSetup":	false,
+		"rootElement":	"body",
 		"organizers": {
 			"RouteOrganizer": "",
 		}

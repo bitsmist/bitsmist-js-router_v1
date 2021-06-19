@@ -64,7 +64,7 @@ Router.prototype.start = function(settings)
 		this.changeState("routing");
 
 		// Get settings from attributes
-		let path = this.getAttribute("data-specpath") || "";
+		let path = this.getAttribute("bm-specpath") || "";
 		if (path)
 		{
 			this._settings.set("system.specPath", path);

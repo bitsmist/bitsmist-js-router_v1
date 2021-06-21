@@ -934,7 +934,7 @@
     		this$1.changeState("routing");
 
     		// Get settings from attributes
-    		var path = this$1.getAttribute("data-specpath") || "";
+    		var path = this$1.getAttribute("bm-specpath") || "";
     		if (path)
     		{
     			this$1._settings.set("system.specPath", path);

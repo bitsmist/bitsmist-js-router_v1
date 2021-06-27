@@ -8,7 +8,7 @@
  */
 // =============================================================================
 
-import RouteOrganizer from './organizer/route-organizer';
+import RouteOrganizer from "../organizer/route-organizer.js";
 
 // =============================================================================
 //	Router class
@@ -57,7 +57,7 @@ Router.prototype.start = function(settings)
 			"RouteOrganizer": "",
 		}
 	};
-	settings = BITSMIST.v1.Util.deepMerge(defaults, settings);
+	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
 
 	// Start
 	return BITSMIST.v1.Component.prototype.start.call(this, settings).then(() => {

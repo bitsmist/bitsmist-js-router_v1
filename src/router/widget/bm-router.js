@@ -51,10 +51,10 @@ Router.prototype.start = function(settings)
 		"settings": {
 			"name":			"Router",
 			"autoSetup":	false,
-			"rootElement":	"body",
+			"rootElement":	document.body,
 		},
 		"organizers": {
-			"RouteOrganizer": "",
+			"RouteOrganizer": {"settings":{"attach":true}},
 		}
 	};
 	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);

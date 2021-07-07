@@ -921,13 +921,13 @@
     		"settings": {
     			"name":			"Router",
     			"autoSetup":	false,
-    			"rootElement":	"body",
+    			"rootElement":	document.body,
     		},
     		"organizers": {
-    			"RouteOrganizer": "",
+    			"RouteOrganizer": {"settings":{"attach":true}},
     		}
     	};
-    	settings = BITSMIST.v1.Util.deepMerge(defaults, settings);
+    	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
 
     	// Start
     	return BITSMIST.v1.Component.prototype.start.call(this, settings).then(function () {
@@ -950,8 +950,7 @@
 
     window.BITSMIST = window.BITSMIST || {};
     window.BITSMIST.v1 = window.BITSMIST.v1 || {};
-    BITSMIST.v1.OrganizerOrganizer.organizers.set("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":300});
-    BITSMIST.v1.OrganizerOrganizer.organizers.get("ComponentOrganizer")["targetEvents"].push("afterSpecLoad");
+    BITSMIST.v1.OrganizerOrganizer.organizers.set("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":4100});
     window.BITSMIST.v1.Router = Router;
 
 }());

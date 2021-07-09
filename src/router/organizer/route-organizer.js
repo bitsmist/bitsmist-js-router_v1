@@ -278,6 +278,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			if (options["pushState"])
 			{
 				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, url);
+				RouteOrganizer.__skipPopstate = false;
 			}
 		}).then(() => {
 			if ( curRouteInfo["specName"] != newRouteInfo["specName"] )
@@ -535,6 +536,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		if (window.history && window.history.pushState){
 			window.addEventListener("popstate", (e) => {
+				console.error("popstate");
 				if (RouteOrganizer.__skipPopstate)
 				{
 					console.warn("Skipping popstate handling since this page is loaded.");

@@ -564,6 +564,7 @@
     			if (options["pushState"])
     			{
     				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, url);
+    				RouteOrganizer.__skipPopstate = false;
     			}
     		}).then(function () {
     			if ( curRouteInfo["specName"] != newRouteInfo["specName"] )
@@ -820,6 +821,7 @@
 
     		if (window.history && window.history.pushState){
     			window.addEventListener("popstate", function (e) {
+    				console.error("popstate");
     				if (RouteOrganizer.__skipPopstate)
     				{
     					console.warn("Skipping popstate handling since this page is loaded.");
@@ -913,7 +915,7 @@
      */
     Router.prototype.start = function(settings)
     {
-    	var this$1 = this;
+    	var this$1$1 = this;
 
 
     	// Defaults
@@ -931,18 +933,18 @@
 
     	// Start
     	return BITSMIST.v1.Component.prototype.start.call(this, settings).then(function () {
-    		this$1.changeState("routing");
+    		this$1$1.changeState("routing");
 
     		// Get settings from attributes
-    		var path = this$1.getAttribute("bm-specpath") || "";
+    		var path = this$1$1.getAttribute("bm-specpath") || "";
     		if (path)
     		{
-    			this$1._settings.set("system.specPath", path);
+    			this$1$1._settings.set("system.specPath", path);
     		}
 
     		// Load spec file
-    		return RouteOrganizer.__initSpec(this$1, this$1._routeInfo["specName"]).then(function () {
-    			this$1.changeState("routed");
+    		return RouteOrganizer.__initSpec(this$1$1, this$1$1._routeInfo["specName"]).then(function () {
+    			this$1$1.changeState("routed");
     		});
     	});
 

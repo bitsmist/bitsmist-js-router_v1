@@ -63,13 +63,6 @@ Router.prototype.start = function(settings)
 	return BITSMIST.v1.Component.prototype.start.call(this, settings).then(() => {
 		this.changeState("routing");
 
-		// Get settings from attributes
-		let path = this.getAttribute("bm-specpath") || "";
-		if (path)
-		{
-			this._settings.set("system.specPath", path);
-		}
-
 		// Load spec file
 		return RouteOrganizer.__initSpec(this, this._routeInfo["specName"]).then(() => {
 			this.changeState("routed");

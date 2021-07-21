@@ -488,10 +488,10 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		for (let i = component._routes.length - 1; i >= 0; i--)
 		{
 			// Check origin
-			if ( !component._routes[i]["origin"] || (component._routes[i]["origin"] && parsedUrl.origin == component._routes[i]["origin"]))
+			if (!component._routes[i]["origin"] || (component._routes[i]["origin"] && parsedUrl.origin == component._routes[i]["origin"]))
 			{
 				// Check path
-				let result = ( !component._routes[i]["path"] ? [] : component._routes[i].re.exec(parsedUrl.pathname));
+				let result = ( !component._routes[i]["path"] ? [] : component._routes[i].re.exec(parsedUrl.pathname) );
 				if (result)
 				{
 					routeName = component._routes[i].name;
@@ -536,7 +536,8 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		if (window.history && window.history.pushState){
 			window.addEventListener("popstate", (e) => {
-				console.error("popstate");
+				// Workaround for safari
+				//   Safari triggers popstate on page load.
 				if (RouteOrganizer.__skipPopstate)
 				{
 					console.warn("Skipping popstate handling since this page is loaded.");
@@ -587,6 +588,24 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}
 
 		return newState;
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Get settings from element's attribute.
+	 *
+	 * @param	{Component}		component			Component.
+	 */
+	static __loadAttrSettings(component)
+	{
+
+		// Get spec path from  bm-specpath
+		if (component.getAttribute("bm-specpath"))
+		{
+			this._settings.set("system.specPath", path);
+		}
 
 	}
 

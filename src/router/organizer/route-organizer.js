@@ -112,8 +112,6 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			});
 		}
 
-		return settings;
-
 	}
 
 	// -------------------------------------------------------------------------
@@ -399,7 +397,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 					});
 				}
 			}).then(() => {
-				return BITSMIST.v1.OrganizerOrganizer.organize("afterSpecLoad", component, component._specs[specName]);
+				return component.addOrganizers(component._specs[specName]);
 			}).then(() => {
 				return component.callOrganizers("afterSpecLoad", component._specs[specName]);
 			}).then(() => {

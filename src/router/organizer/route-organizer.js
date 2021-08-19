@@ -46,13 +46,12 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	/**
 	 * Init.
 	 *
-	 * @param	{Object}		conditions			Conditions.
 	 * @param	{Component}		component			Component.
 	 * @param	{Object}		settings			Settings.
 	 *
 	 * @return 	{Promise}		Promise.
 	 */
-	static init(conditions, component, settings)
+	static init(component, settings)
 	{
 
 		// Add properties
@@ -399,6 +398,8 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 						component._specs[specName] = spec;
 					});
 				}
+			}).then(() => {
+				return BITSMIST.v1.OrganizerOrganizer.organize("afterSpecLoad", component, component._specs[specName]);
 			}).then(() => {
 				return component.callOrganizers("afterSpecLoad", component._specs[specName]);
 			}).then(() => {

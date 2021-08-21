@@ -22,28 +22,6 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Global init.
-	 */
-	static globalInit()
-	{
-
-		RouteOrganizer.__skipPopstate = false;
-
-		// Catch if this page is loaded to prevent safari from extra popstate handling.
-		// Safari fires popstate when navigate back from different document context.
-		let ua = window.navigator.userAgent.toLowerCase()
-		if (ua.indexOf('safari') > -1 && ua.indexOf('chrome') == -1)
-		{
-			window.addEventListener("DOMContentLoaded", (e) => {
-				RouteOrganizer.__skipPopstate = true;
-			});
-		}
-
-	}
-
-	// -------------------------------------------------------------------------
-
-	/**
 	 * Init.
 	 *
 	 * @param	{Component}		component			Component.
@@ -275,7 +253,6 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			if (options["pushState"])
 			{
 				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, url);
-				RouteOrganizer.__skipPopstate = false;
 			}
 		}).then(() => {
 			if ( curRouteInfo["specName"] != newRouteInfo["specName"] )
@@ -511,35 +488,24 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static __initPopState(component)
 	{
 
-		if (window.history && window.history.pushState){
-			window.addEventListener("popstate", (e) => {
-				// Workaround for safari
-				//   Safari triggers popstate on page load.
-				if (RouteOrganizer.__skipPopstate)
-				{
-					console.warn("Skipping popstate handling since this page is loaded.");
-					RouteOrganizer.__skipPopstate = false;
-					return;
-				}
+		window.addEventListener("popstate", (e) => {
+			let targetComponentName = component._routeInfo["componentName"];
+			let targetComponent = component._components && component._components[targetComponentName];
 
-				let promise;
-				let componentName = component._routeInfo["componentName"];
-				if (component._components && component._components[componentName])
+			return Promise.resolve().then(() => {
+				if (targetComponent)
 				{
-					promise = component._components[componentName].trigger("beforePopState", component);
+					return targetComponent.trigger("beforePopState", component);
 				}
-
-				return Promise.all([promise]).then(() => {
-					return RouteOrganizer._open(component, RouteOrganizer.__loadRouteInfo(component, window.location.href), {"pushState":false});
-				}).then(() => {
-					let componentName = component._routeInfo["componentName"];
-					if (component._components && component._components[componentName])
-					{
-						return component._components[componentName].trigger("afterPopState", component);
-					}
-				});
+			}).then(() => {
+				return RouteOrganizer._open(component, RouteOrganizer.__loadRouteInfo(component, window.location.href), {"pushState":false});
+			}).then(() => {
+				if (targetComponent)
+				{
+					return targetComponent.trigger("afterPopState", component);
+				}
 			});
-		}
+		});
 
 	}
 

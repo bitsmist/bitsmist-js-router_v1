@@ -69,6 +69,9 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static organize(conditions, component, settings)
 	{
 
+		// Load settings from attributes
+		RouteOrganizer.__loadAttrSettings(component);
+
 		// Load route info
 		let routes = component.settings.get("routes");
 		if (routes)
@@ -545,9 +548,10 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		// Get spec path from  bm-specpath
-		if (component.getAttribute("bm-specpath"))
+		let path = component.getAttribute("bm-specpath");
+		if (path)
 		{
-			this._settings.set("system.specPath", path);
+			component._settings.set("system.specPath", path);
 		}
 
 	}

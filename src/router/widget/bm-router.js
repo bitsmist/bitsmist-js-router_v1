@@ -49,23 +49,24 @@ Router.prototype.start = function(settings)
 	// Defaults
 	let defaults = {
 		"settings": {
-			"name":			"Router",
-			"autoSetup":	false,
-			"rootElement":	document.body,
+			"name":				"Router",
+			"autoSetup":		false,
+			"autoPostStart":	false,
+			"rootElement":		document.body,
 		},
 		"organizers": {
-			"RouteOrganizer": {"settings":{"attach":true}},
+			"RouteOrganizer":	{"settings":{"attach":true}},
 		}
 	};
 	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
 
-	// Start
-	return BITSMIST.v1.Component.prototype.start.call(this, settings).then(() => {
-		this.changeState("routing");
-
+	return Promise.resolve().then(() => {
+		// super()
+		return BITSMIST.v1.Component.prototype.start.call(this, settings);
+	}).then(() => {
 		// Load spec file
 		return RouteOrganizer.__initSpec(this, this._routeInfo["specName"]).then(() => {
-			this.changeState("routed");
+			this._postStart();
 		});
 	});
 

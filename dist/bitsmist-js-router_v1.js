@@ -310,35 +310,7 @@
     	RouteOrganizer.prototype = Object.create( superclass && superclass.prototype );
     	RouteOrganizer.prototype.constructor = RouteOrganizer;
 
-    	RouteOrganizer.globalInit = function globalInit ()
-    	{
-
-    		RouteOrganizer.__skipPopstate = false;
-
-    		// Catch if this page is loaded to prevent safari from extra popstate handling.
-    		// Safari fires popstate when navigate back from different document context.
-    		var ua = window.navigator.userAgent.toLowerCase();
-    		if (ua.indexOf('safari') > -1 && ua.indexOf('chrome') == -1)
-    		{
-    			window.addEventListener("DOMContentLoaded", function (e) {
-    				RouteOrganizer.__skipPopstate = true;
-    			});
-    		}
-
-    	};
-
-    	// -------------------------------------------------------------------------
-
-    	/**
-    	 * Init.
-    	 *
-    	 * @param	{Object}		conditions			Conditions.
-    	 * @param	{Component}		component			Component.
-    	 * @param	{Object}		settings			Settings.
-    	 *
-    	 * @return 	{Promise}		Promise.
-    	 */
-    	RouteOrganizer.init = function init (conditions, component, settings)
+    	RouteOrganizer.init = function init (component, settings)
     	{
 
     		// Add properties
@@ -378,6 +350,9 @@
     	RouteOrganizer.organize = function organize (conditions, component, settings)
     	{
 
+    		// Load settings from attributes
+    		RouteOrganizer.__loadAttrSettings(component);
+
     		// Load route info
     		var routes = component.settings.get("routes");
     		if (routes)
@@ -398,8 +373,6 @@
     				component._specs[key] = specs[key];
     			});
     		}
-
-    		return settings;
 
     	};
 
@@ -564,7 +537,6 @@
     			if (options["pushState"])
     			{
     				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, url);
-    				RouteOrganizer.__skipPopstate = false;
     			}
     		}).then(function () {
     			if ( curRouteInfo["specName"] != newRouteInfo["specName"] )
@@ -681,9 +653,11 @@
     			return Promise.resolve().then(function () {
     				if (!component._specs[specName])
     				{
-    					return RouteOrganizer.__loadSpec(specName, component.settings.get("system.specPath")).then(function (spec) {						component._specs[specName] = spec;
+    					return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then(function (spec) {						component._specs[specName] = spec;
     					});
     				}
+    			}).then(function () {
+    				return component.addOrganizers(component._specs[specName]);
     			}).then(function () {
     				return component.callOrganizers("afterSpecLoad", component._specs[specName]);
     			}).then(function () {
@@ -698,52 +672,30 @@
     	/**
     	 * Load the spec file for this page.
     	 *
+    	 * @param	{Component}		component			Component.
     	 * @param	{String}		specName			Spec name.
     	 * @param	{String}		path				Path to spec.
     	 *
     	 * @return  {Promise}		Promise.
     	 */
-    	RouteOrganizer.__loadSpec = function __loadSpec (specName, path)
+    	RouteOrganizer.__loadSpec = function __loadSpec (component, specName, path)
     	{
 
-    //		let urlCommon = BITSMIST.v1.Util.concatPath([path, "common.js"]);
-    		var url = BITSMIST.v1.Util.concatPath([path, specName + ".js"]);
     		var spec;
     //		let specCommon;
-    //		let specMerged;
     		var promises = [];
 
-    		console.debug(("RouteOrganizer._loadSpec(): Loading spec file. url=" + url));
+    		console.debug(("RouteOrganizer._loadSpec(): Loading spec file. name=" + (component.name) + ", specName=" + specName + ", path=" + path));
 
     		// Load specs
-    		//promises.push(BITSMIST.v1.AjaxUtil.ajaxRequest({"url":urlCommon, "method":"GET"}));
-    		promises.push(BITSMIST.v1.AjaxUtil.ajaxRequest({"url":url, "method":"GET"}));
+    		var type = "js";
+    		//promises.push(BITSMIST.v1.SettingOrganizer.loadSetting("common", path, type));
+    		promises.push(BITSMIST.v1.SettingOrganizer.loadSetting(specName, path, type));
 
     		return Promise.all(promises).then(function (result) {
-    			// Convert to json
-    			try
-    			{
-    				console.debug(("RouteOrganizer.__loadSpec(): Loaded spec file. url=" + url));
-
-    //				specCommon = JSON.parse(result[0]);
-    //				spec = JSON.parse(result[1]);
-    				spec = JSON.parse(result[0].responseText);
-    			}
-    			catch(e)
-    			{
-    				if (e instanceof SyntaxError)
-    				{
-    					//throw new SyntaxError(`Illegal json string. url=${(specCommon ? url : urlCommon)}`);
-    					throw new SyntaxError(("Illegal json string. url=" + url + ", message=" + (e.message)));
-    				}
-    				else
-    				{
-    					throw e;
-    				}
-    			}
-    //			specMerged = BITSMIST.v1.Util.deepMerge(specCommon, spec);
-
-    			//return specMerged;
+    			spec = result[0];
+    //			specCommon = result[0];
+    //			spec = BITSMIST.v1.Util.deepMerge(specCommon, result[1]);
 
     			return spec;
     		});
@@ -773,10 +725,10 @@
     		for (var i = component._routes.length - 1; i >= 0; i--)
     		{
     			// Check origin
-    			if ( !component._routes[i]["origin"] || (component._routes[i]["origin"] && parsedUrl.origin == component._routes[i]["origin"]))
+    			if (!component._routes[i]["origin"] || (component._routes[i]["origin"] && parsedUrl.origin == component._routes[i]["origin"]))
     			{
     				// Check path
-    				var result = ( !component._routes[i]["path"] ? [] : component._routes[i].re.exec(parsedUrl.pathname));
+    				var result = ( !component._routes[i]["path"] ? [] : component._routes[i].re.exec(parsedUrl.pathname) );
     				if (result)
     				{
     					routeName = component._routes[i].name;
@@ -819,34 +771,24 @@
     	RouteOrganizer.__initPopState = function __initPopState (component)
     	{
 
-    		if (window.history && window.history.pushState){
-    			window.addEventListener("popstate", function (e) {
-    				console.error("popstate");
-    				if (RouteOrganizer.__skipPopstate)
-    				{
-    					console.warn("Skipping popstate handling since this page is loaded.");
-    					RouteOrganizer.__skipPopstate = false;
-    					return;
-    				}
+    		window.addEventListener("popstate", function (e) {
+    			var targetComponentName = component._routeInfo["componentName"];
+    			var targetComponent = component._components && component._components[targetComponentName];
 
-    				var promise;
-    				var componentName = component._routeInfo["componentName"];
-    				if (component._components && component._components[componentName])
+    			return Promise.resolve().then(function () {
+    				if (targetComponent)
     				{
-    					promise = component._components[componentName].trigger("beforePopState", component);
+    					return targetComponent.trigger("beforePopState", component);
     				}
-
-    				return Promise.all([promise]).then(function () {
-    					return RouteOrganizer._open(component, RouteOrganizer.__loadRouteInfo(component, window.location.href), {"pushState":false});
-    				}).then(function () {
-    					var componentName = component._routeInfo["componentName"];
-    					if (component._components && component._components[componentName])
-    					{
-    						return component._components[componentName].trigger("afterPopState", component);
-    					}
-    				});
+    			}).then(function () {
+    				return RouteOrganizer._open(component, RouteOrganizer.__loadRouteInfo(component, window.location.href), {"pushState":false});
+    			}).then(function () {
+    				if (targetComponent)
+    				{
+    					return targetComponent.trigger("afterPopState", component);
+    				}
     			});
-    		}
+    		});
 
     	};
 
@@ -872,6 +814,25 @@
     		}
 
     		return newState;
+
+    	};
+
+    	// -----------------------------------------------------------------------------
+
+    	/**
+    	 * Get settings from element's attribute.
+    	 *
+    	 * @param	{Component}		component			Component.
+    	 */
+    	RouteOrganizer.__loadAttrSettings = function __loadAttrSettings (component)
+    	{
+
+    		// Get spec path from  bm-specpath
+    		var path = component.getAttribute("bm-specpath");
+    		if (path)
+    		{
+    			component._settings.set("system.specPath", path);
+    		}
 
     	};
 
@@ -921,30 +882,24 @@
     	// Defaults
     	var defaults = {
     		"settings": {
-    			"name":			"Router",
-    			"autoSetup":	false,
-    			"rootElement":	document.body,
+    			"name":				"Router",
+    			"autoSetup":		false,
+    			"autoPostStart":	false,
+    			"rootElement":		document.body,
     		},
     		"organizers": {
-    			"RouteOrganizer": {"settings":{"attach":true}},
+    			"RouteOrganizer":	{"settings":{"attach":true}},
     		}
     	};
     	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
 
-    	// Start
-    	return BITSMIST.v1.Component.prototype.start.call(this, settings).then(function () {
-    		this$1$1.changeState("routing");
-
-    		// Get settings from attributes
-    		var path = this$1$1.getAttribute("bm-specpath") || "";
-    		if (path)
-    		{
-    			this$1$1._settings.set("system.specPath", path);
-    		}
-
+    	return Promise.resolve().then(function () {
+    		// super()
+    		return BITSMIST.v1.Component.prototype.start.call(this$1$1, settings);
+    	}).then(function () {
     		// Load spec file
     		return RouteOrganizer.__initSpec(this$1$1, this$1$1._routeInfo["specName"]).then(function () {
-    			this$1$1.changeState("routed");
+    			this$1$1._postStart();
     		});
     	});
 

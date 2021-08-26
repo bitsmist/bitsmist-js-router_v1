@@ -10,3 +10,9 @@ BITSMIST.v1.OrganizerOrganizer.organizers.set("RouteOrganizer", {"object":RouteO
 
 import Router from "./widget/bm-router";
 window.BITSMIST.v1.Router = Router;
+
+// Add new target events to organizers
+BITSMIST.v1.OrganizerOrganizer.organizers.get("EventOrganizer")["targetEvents"].push("afterSpecLoad");
+BITSMIST.v1.OrganizerOrganizer.organizers.get("ComponentOrganizer")["targetEvents"].push("afterSpecLoad");
+
+

@@ -409,8 +409,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		// Load specs
 		let type = "js";
-		//promises.push(BITSMIST.v1.SettingOrganizer.loadSetting("common", path, type));
-		promises.push(BITSMIST.v1.SettingOrganizer.loadSetting(specName, path, type));
+		promises.push(BITSMIST.v1.SettingOrganizer.loadSetting(component, specName, path, type));
 
 		return Promise.all(promises).then((result) => {
 			spec = result[0];

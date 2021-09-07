@@ -49,13 +49,23 @@ Router.prototype.start = function(settings)
 	// Defaults
 	let defaults = {
 		"settings": {
-			"name":				"Router",
-			"autoSetup":		false,
-			"autoPostStart":	false,
-			"rootElement":		document.body,
+			"name":						"Router",
+			"autoSetup":				false,
+			"autoPostStart":			false,
+			"rootElement":				document.body,
+		},
+		"events": {
+			"this": {
+				"handlers": {
+					"afterPopState": 	"onAfterPopState",
+					"doValidateURL": 	"onDoValidateURL",
+					"doNormalizeURL": 	"onDoNormalizeURL",
+					"doRefresh": 		"onDoRefresh"
+				}
+			}
 		},
 		"organizers": {
-			"RouteOrganizer":	{"settings":{"attach":true}},
+			"RouteOrganizer":			{"settings":{"attach":true}},
 		}
 	};
 	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
@@ -64,10 +74,20 @@ Router.prototype.start = function(settings)
 		// super()
 		return BITSMIST.v1.Component.prototype.start.call(this, settings);
 	}).then(() => {
+		// Started
+		return this._postStart();
+	}).then(() => {
 		// Load spec file
-		return RouteOrganizer.__initSpec(this, this._routeInfo["specName"]).then(() => {
-			this._postStart();
-		});
+		return RouteOrganizer.__initSpec(this, this._routeInfo["specName"]);
+	}).then(() => {
+		// Open route
+		return this.openRoute({"url":window.location.href}, {"pushState":false});
 	});
 
 }
+
+// Need to override
+Router.prototype.onAfterPopState = function() {};
+Router.prototype.onDoValidateURL = function() {};
+Router.prototype.onDoNormalizeURL = function() {};
+Router.prototype.onDoRefresh = function() {};

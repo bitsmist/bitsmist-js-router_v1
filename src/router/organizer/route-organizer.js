@@ -35,24 +35,33 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		// Add properties
 		Object.defineProperty(component, 'routeInfo', { get() { return this._routeInfo; }, });
 		Object.defineProperty(component, 'specs', { get() { return this._specs; }, });
+		Object.defineProperty(component, 'spec', { get() { return this._spec; }, });
 
 		// Add methods
 		component.loadParameters = function() { return RouteOrganizer._loadParameters(); }
+		component.validateRoute = function() { return RouteOrganizer._validateRoute(this); }
 		component.openRoute = function(routeInfo, options) { return RouteOrganizer._open(this, routeInfo, options); }
 		component.replaceRoute = function(routeInfo, options) { return RouteOrganizer._replace(this, routeInfo, options); }
 		component.jumpRoute = function(routeInfo, options) { return RouteOrganizer._jump(this, routeInfo, options); }
 		component.refreshRoute = function(routeInfo, options) { return RouteOrganizer._refresh(this, routeInfo, options); }
 		component.updateRoute = function(routeInfo, options) { return RouteOrganizer._update(this, routeInfo, options); }
 
+		// Add properties
+		Object.defineProperty(component, "settings", {
+			get() { return this._spec; },
+		});
+
 		// Init vars
 		component._routes = [];
 		component._specs = {};
+		component._spec = new BITSMIST.v1.ChainableStore({"chain":component._settings});
 
 		// Init popstate handler
 		RouteOrganizer.__initPopState(component);
 
 		// Set state on the first page
 		history.replaceState(RouteOrganizer.__getState("connect"), null, null);
+
 	}
 
 	// -------------------------------------------------------------------------
@@ -100,11 +109,11 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	// -------------------------------------------------------------------------
 
 	/**
-	* Add a route.
-	*
-	* @param	{Object}		routeInfo			Route info.
-	* @param	{Boolean}		first				Add to top when true.
-	*/
+	 * Add a route.
+	 *
+	 * @param	{Object}		routeInfo			Route info.
+	 * @param	{Boolean}		first				Add to top when true.
+	 */
 	static _addRoute(component, routeInfo, first)
 	{
 
@@ -129,16 +138,17 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}
 
 	}
+
 	// -------------------------------------------------------------------------
 
 	/**
-	* Build url from route info.
-	*
-	* @param	{Object}		routeInfo			Route information.
-	* @param	{Object}		options				Query options.
-	*
-	* @return  {string}		Url.
-	*/
+	 * Build url from route info.
+	 *
+	 * @param	{Object}		routeInfo			Route information.
+	 * @param	{Object}		options				Query options.
+	 *
+	 * @return  {string}		Url.
+	 */
 	static _buildUrl(routeInfo, component)
 	{
 
@@ -162,12 +172,12 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	// -----------------------------------------------------------------------------
 
 	/**
-	* Build query string from the options object.
-	*
-	* @param	{Object}		options				Query options.
-	*
-	* @return	{String}		Query string.
-	*/
+	 * Build query string from the options object.
+	 *
+	 * @param	{Object}		options				Query options.
+	 *
+	 * @return	{String}		Query string.
+	 */
 	static _buildUrlQuery(options)
 	{
 
@@ -200,16 +210,17 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	 *
 	 * @return  {Array}			Options array.
 	 */
-	static _loadParameters()
+	static _loadParameters(url)
 	{
 
+		url = url || window.location.href;
 		let vars = {}
 		let hash;
 		let value;
 
 		if (window.location.href.indexOf("?") > -1)
 		{
-			let hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+			let hashes = url.slice(url.indexOf('?') + 1).split('&');
 
 			for(let i = 0; i < hashes.length; i++) {
 				hash = hashes[i].split('=');
@@ -229,11 +240,47 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	// -----------------------------------------------------------------------------
 
 	/**
+	 * Validate route.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{String}		url					Url to validate.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static _validateRoute(component, url)
+	{
+
+		return Promise.resolve().then(() => {
+			component._validationResult["result"] = true;
+
+			// Validate URL (by organizers)
+			return component.callOrganizers("doCheckValidity", {
+				"item":				RouteOrganizer._loadParameters(url),
+				"validationName":	component.settings.get("settings.validationName")
+			});
+		}).then(() => {
+			// Validate URL (by user)
+			return component.trigger("doValidateURL");
+		}).then(() => {
+			// Validation failed?
+			if (!component._validationResult["result"])
+			{
+				throw new Error("URL validation failed", component._validationResult["invalids"]);
+			}
+		});
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
 	 * Open route.
 	 *
 	 * @param	{Component}		component			Component.
 	 * @param	{Object}		routeInfo			Route information.
 	 * @param	{Object}		options				Query options.
+	 *
+	 * @return 	{Promise}		Promise.
 	 */
 	static _open(component, routeInfo, options)
 	{
@@ -246,6 +293,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		let newRouteInfo = RouteOrganizer.__loadRouteInfo(component, url);
 		component._routeInfo = newRouteInfo;
 
+		// Jump to another page
 		if (options["jump"] || !newRouteInfo["name"] || ( curRouteInfo["name"] != newRouteInfo["name"]) )
 		{
 			RouteOrganizer._jump(component, {"url":url});
@@ -253,6 +301,10 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}
 
 		return Promise.resolve().then(() => {
+			// Validate URL
+			return RouteOrganizer._validateRoute(component, url);
+		}).then(() => {
+			// Replace URL
 			if (options["pushState"])
 			{
 				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, url);
@@ -269,6 +321,9 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				return RouteOrganizer._refresh(component, routeInfo, options);
 			}
 		}).then(() => {
+			// Normalize URL
+			return component.trigger("doNormalizeURL");
+		}).then(() => {
 			if (routeInfo["dispUrl"])
 			{
 				// Replace url
@@ -281,12 +336,12 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	// -----------------------------------------------------------------------------
 
 	/**
-	* Jump to url.
-	*
-	* @param	{Component}		component			Component.
-	* @param	{Object}		routeInfo			Route information.
-	* @param	{Object}		options				Query options.
-	*/
+	 * Jump to url.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{Object}		routeInfo			Route information.
+	 * @param	{Object}		options				Query options.
+	 */
 	static _jump(component, routeInfo)
 	{
 
@@ -303,15 +358,13 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	 * @param	{Component}		component			Component.
 	 * @param	{Object}		routeInfo			Route information.
 	 * @param	{Object}		options				Query options.
+	 *
+	 * @return 	{Promise}		Promise.
 	 */
 	static _refresh(component, routeInfo, options)
 	{
 
-		let componentName = component._routeInfo["componentName"];
-		if (component._components && component._components[componentName])
-		{
-			return component._components[componentName].refresh({"sender":component, "pushState":false});
-		}
+		return component.trigger("doRefresh");
 
 	}
 
@@ -323,6 +376,8 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	 * @param	{Component}		component			Component.
 	 * @param	{Object}		routeInfo			Route information.
 	 * @param	{Object}		options				Query options.
+	 *
+	 * @return 	{Promise}		Promise.
 	 */
 	static _update(component, routeInfo, options)
 	{
@@ -374,6 +429,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				{
 					return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then((spec) => {;
 						component._specs[specName] = spec;
+						component._spec.items = spec;
 					});
 				}
 			}).then(() => {
@@ -409,6 +465,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		// Load specs
 		let type = "js";
+//		promises.push(BITSMIST.v1.SettingOrganizer.loadSetting(component, "common", path, type));
 		promises.push(BITSMIST.v1.SettingOrganizer.loadSetting(component, specName, path, type));
 
 		return Promise.all(promises).then((result) => {
@@ -491,21 +548,12 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		window.addEventListener("popstate", (e) => {
-			let targetComponentName = component._routeInfo["componentName"];
-			let targetComponent = component._components && component._components[targetComponentName];
-
 			return Promise.resolve().then(() => {
-				if (targetComponent)
-				{
-					return targetComponent.trigger("beforePopState", component);
-				}
+				return component.trigger("beforePopState");
 			}).then(() => {
-				return RouteOrganizer._open(component, RouteOrganizer.__loadRouteInfo(component, window.location.href), {"pushState":false});
+				return RouteOrganizer._open(component, {"url":window.location.href}, {"pushState":false});
 			}).then(() => {
-				if (targetComponent)
-				{
-					return targetComponent.trigger("afterPopState", component);
-				}
+				return component.trigger("afterPopState");
 			});
 		});
 
@@ -550,7 +598,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		let path = component.getAttribute("bm-specpath");
 		if (path)
 		{
-			component._settings.set("system.specPath", path);
+			component.settings.set("system.specPath", path);
 		}
 
 	}

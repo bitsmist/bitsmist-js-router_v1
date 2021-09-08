@@ -12,8 +12,11 @@ import Router from "./widget/bm-router";
 window.BITSMIST.v1.Router = Router;
 
 // Add new target events to organizers
-BITSMIST.v1.OrganizerOrganizer.organizers.get("EventOrganizer")["targetEvents"].push("afterSpecLoad");
-BITSMIST.v1.OrganizerOrganizer.organizers.get("ComponentOrganizer")["targetEvents"].push("afterSpecLoad");
+BITSMIST.v1.OrganizerOrganizer.addTarget("EventOrganizer", "targetEvents", "afterSpecLoad");
+BITSMIST.v1.OrganizerOrganizer.addTarget("ComponentOrganizer", "targetEvents", "afterSpecLoad");
+BITSMIST.v1.OrganizerOrganizer.addTarget("ValidationOrganizer", "targetEvents", "afterSpecLoad");
+BITSMIST.v1.OrganizerOrganizer.addTarget("PreferenceOrganizer", "targetEvents", "afterSpecLoad");
+BITSMIST.v1.OrganizerOrganizer.addTarget("PluginOrganizer", "targetEvents", "afterSpecLoad");
 
 // Suspend all components until Router finishes its initialization.
 BITSMIST.v1.StateOrganizer.globalSuspend();

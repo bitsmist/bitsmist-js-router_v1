@@ -364,7 +364,13 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static _refresh(component, routeInfo, options)
 	{
 
-		return component.trigger("doRefresh");
+		return Promise.resolve().then(() => {
+			return component.trigger("beforeRefresh");
+		}).then(() => {
+			return component.trigger("doRefresh");
+		}).then(() => {
+			return component.trigger("afterRefresh");
+		});
 
 	}
 
@@ -422,24 +428,23 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static __initSpec(component, specName)
 	{
 
-		if (specName && !component._specs[specName])
-		{
-			return Promise.resolve().then(() => {
-				if (!component._specs[specName])
-				{
-					return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then((spec) => {;
-						component._specs[specName] = spec;
-						component._spec.items = spec;
-					});
-				}
-			}).then(() => {
-				return component.addOrganizers(component._specs[specName]);
-			}).then(() => {
-				return component.callOrganizers("afterSpecLoad", component._specs[specName]);
-			}).then(() => {
-				return component.trigger("afterSpecLoad", component, {"spec":component._specs[component._routeInfo["specName"]]});
-			});
-		}
+		BITSMIST.v1.Util.assert(specName, "A spec name not specified.");
+
+		return Promise.resolve().then(() => {
+			if (!component._specs[specName])
+			{
+				return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then((spec) => {;
+					component._specs[specName] = spec;
+					component._spec.items = spec;
+				});
+			}
+		}).then(() => {
+			return component.addOrganizers(component._specs[specName]);
+		}).then(() => {
+			return component.callOrganizers("afterSpecLoad", component._specs[specName]);
+		}).then(() => {
+			return component.trigger("afterSpecLoad", component, {"spec":component._specs[component._routeInfo["specName"]]});
+		});
 
 	}
 

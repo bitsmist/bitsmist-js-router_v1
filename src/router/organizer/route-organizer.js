@@ -251,6 +251,8 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		return Promise.resolve().then(() => {
+			return component.trigger("beforeValidate");
+		}).then(() => {
 			component._validationResult["result"] = true;
 
 			// Validate URL (by organizers)
@@ -262,11 +264,36 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			// Validate URL (by user)
 			return component.trigger("doValidateURL");
 		}).then(() => {
+			return component.trigger("afterValidate");
+		}).then(() => {
 			// Validation failed?
 			if (!component._validationResult["result"])
 			{
 				throw new Error("URL validation failed", component._validationResult["invalids"]);
 			}
+		});
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Normalize route.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{String}		url					Url to validate.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static _normalizeRoute(component, url)
+	{
+
+		return Promise.resolve().then(() => {
+			return component.trigger("beforeNormalizeURL");
+		}).then(() => {
+			return component.trigger("doNormalizeURL");
+		}).then(() => {
+			return component.trigger("afterNormalizeURL");
 		});
 
 	}
@@ -310,19 +337,17 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, url);
 			}
 		}).then(() => {
+			// Load another component
 			if ( curRouteInfo["specName"] != newRouteInfo["specName"] )
 			{
-				// Load another component and open
 				return RouteOrganizer._update(component, newRouteInfo, options);
 			}
-			else
-			{
-				// Refresh current component
-				return RouteOrganizer._refresh(component, routeInfo, options);
-			}
+		}).then(() => {
+			// Refresh
+			return RouteOrganizer._refresh(component, routeInfo, options);
 		}).then(() => {
 			// Normalize URL
-			return component.trigger("doNormalizeURL");
+			return RouteOrganizer._normalizeRoute(component, url);
 		}).then(() => {
 			if (routeInfo["dispUrl"])
 			{
@@ -332,7 +357,6 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		});
 
 	}
-
 	// -----------------------------------------------------------------------------
 
 	/**
@@ -428,7 +452,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static __initSpec(component, specName)
 	{
 
-		BITSMIST.v1.Util.assert(specName, "A spec name not specified.");
+		BITSMIST.v1.Util.assert(specName, "A spec name not specified.", TypeError);
 
 		return Promise.resolve().then(() => {
 			if (!component._specs[specName])

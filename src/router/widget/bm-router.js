@@ -55,16 +55,6 @@ Router.prototype.start = function(settings)
 			"rootElement":				document.body,
 			"ignoreGlobalSuspend":		true,
 		},
-		"events": {
-			"this": {
-				"handlers": {
-					"afterPopState": 	"onAfterPopState",
-					"doValidateURL": 	"onDoValidateURL",
-					"doNormalizeURL": 	"onDoNormalizeURL",
-					"doRefresh": 		"onDoRefresh"
-				}
-			}
-		},
 		"organizers": {
 			"RouteOrganizer":			{"settings":{"attach":true}},
 		}
@@ -89,9 +79,3 @@ Router.prototype.start = function(settings)
 	});
 
 }
-
-// Need to override
-Router.prototype.onAfterPopState = function() {};
-Router.prototype.onDoValidateURL = function() {};
-Router.prototype.onDoNormalizeURL = function() {};
-Router.prototype.onDoRefresh = function() {};

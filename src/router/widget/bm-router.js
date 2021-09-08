@@ -53,6 +53,7 @@ Router.prototype.start = function(settings)
 			"autoSetup":				false,
 			"autoPostStart":			false,
 			"rootElement":				document.body,
+			"ignoreGlobalSuspend":		true,
 		},
 		"events": {
 			"this": {
@@ -76,6 +77,9 @@ Router.prototype.start = function(settings)
 	}).then(() => {
 		// Started
 		return this._postStart();
+	}).then(() => {
+		// Resume components
+		return BITSMIST.v1.StateOrganizer.globalResume();
 	}).then(() => {
 		// Load spec file
 		return RouteOrganizer.__initSpec(this, this._routeInfo["specName"]);

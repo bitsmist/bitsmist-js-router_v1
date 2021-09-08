@@ -15,4 +15,5 @@ window.BITSMIST.v1.Router = Router;
 BITSMIST.v1.OrganizerOrganizer.organizers.get("EventOrganizer")["targetEvents"].push("afterSpecLoad");
 BITSMIST.v1.OrganizerOrganizer.organizers.get("ComponentOrganizer")["targetEvents"].push("afterSpecLoad");
 
-
+// Suspend all components until Router finishes its initialization.
+BITSMIST.v1.StateOrganizer.globalSuspend();

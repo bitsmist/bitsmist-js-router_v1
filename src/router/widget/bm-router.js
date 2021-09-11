@@ -57,6 +57,7 @@ Router.prototype.start = function(settings)
 		},
 		"organizers": {
 			"RouteOrganizer":			{"settings":{"attach":true}},
+			"ValidationOrganizer":		{"settings":{"attach":true}},
 		}
 	};
 	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
@@ -75,7 +76,7 @@ Router.prototype.start = function(settings)
 		return RouteOrganizer.__initSpec(this, this._routeInfo["specName"]);
 	}).then(() => {
 		// Open route
-		return this.openRoute({"url":window.location.href}, {"pushState":false});
+		return this.openRoute();
 	});
 
 }

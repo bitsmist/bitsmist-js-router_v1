@@ -38,7 +38,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		Object.defineProperty(component, 'spec', { get() { return this._spec; }, });
 
 		// Add methods
-		component.loadParameters = function() { return RouteOrganizer._loadParameters(); }
+		component.loadParameters = function(url) { return RouteOrganizer._loadParameters(url); }
 		component.validateRoute = function() { return RouteOrganizer._validateRoute(this); }
 		component.openRoute = function(routeInfo, options) { return RouteOrganizer._open(this, routeInfo, options); }
 		component.replaceRoute = function(routeInfo, options) { return RouteOrganizer._replace(this, routeInfo, options); }
@@ -111,6 +111,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	/**
 	 * Add a route.
 	 *
+	 * @param	{Component}		component			Component.
 	 * @param	{Object}		routeInfo			Route info.
 	 * @param	{Boolean}		first				Add to top when true.
 	 */
@@ -144,25 +145,30 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	/**
 	 * Build url from route info.
 	 *
+	 * @param	{Component}		component			Component.
 	 * @param	{Object}		routeInfo			Route information.
-	 * @param	{Object}		options				Query options.
+	 * @param	{Object}		options				Options.
 	 *
-	 * @return  {string}		Url.
+	 * @return  {String}		Url.
 	 */
-	static _buildUrl(routeInfo, component)
+	static _buildUrl(component, routeInfo, options)
 	{
 
-		let url;
+		let url = "";
 
-		if (routeInfo["url"])
+		url += ( routeInfo["url"] ? routeInfo["url"] : "" );
+		url += ( routeInfo["path"] ? routeInfo["path"] : "" );
+		url += ( routeInfo["query"] ? "?" + routeInfo["query"] : "" );
+
+		if (routeInfo["queryParameters"])
 		{
-			url = routeInfo["url"];
-		}
-		else
-		{
-			url  = ( routeInfo["path"] ? routeInfo["path"] : component._routeInfo["path"] );
-			url += ( routeInfo["query"] ? "?" + routeInfo["query"] : "" );
-			url += ( routeInfo["queryParameters"] ? RouteOrganizer._buildUrlQuery(routeInfo["queryParameters"]) : "" );
+			let params = {};
+			if (options && options["mergeParameters"])
+			{
+				params = Object.assign(params, component.routeInfo["queryParameters"]);
+			}
+			params = Object.assign(params, routeInfo["queryParameters"]);
+			url += RouteOrganizer._buildUrlQuery(params);
 		}
 
 		return url;
@@ -250,18 +256,17 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static _validateRoute(component, url)
 	{
 
+		component._validationResult["result"] = true;
+
 		return Promise.resolve().then(() => {
 			return component.trigger("beforeValidate");
 		}).then(() => {
-			component._validationResult["result"] = true;
-
 			// Validate URL (by organizers)
 			return component.callOrganizers("doCheckValidity", {
 				"item":				RouteOrganizer._loadParameters(url),
 				"validationName":	component.settings.get("settings.validationName")
 			});
 		}).then(() => {
-			// Validate URL (by user)
 			return component.trigger("doValidateURL");
 		}).then(() => {
 			return component.trigger("afterValidate");
@@ -313,50 +318,64 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		options = Object.assign({}, options);
-		options["pushState"] = ( options["pushState"] !== undefined ? options["pushState"] : true );
+		let newRouteInfo;
+		let newUrl;
 
-		let url = RouteOrganizer._buildUrl(routeInfo, component);
-		let curRouteInfo = Object.assign({}, component._routeInfo);
-		let newRouteInfo = RouteOrganizer.__loadRouteInfo(component, url);
-		component._routeInfo = newRouteInfo;
+		// Current route info
+		let curRouteInfo = component._routeInfo;
+		let curUrl = window.location.href;
+
+		// New route info
+		if (routeInfo)
+		{
+			newUrl = RouteOrganizer._buildUrl(component, routeInfo, options);
+			newRouteInfo = RouteOrganizer.__loadRouteInfo(component, newUrl);
+			component._routeInfo = newRouteInfo;
+			options["pushState"] = BITSMIST.v1.Util.safeGet(options, "pushState", true);
+		}
+		else
+		{
+			newUrl = window.location.href;
+			newRouteInfo = curRouteInfo;
+			options["pushState"] = false;
+		}
 
 		// Jump to another page
-		if (options["jump"] || !newRouteInfo["name"] || ( curRouteInfo["name"] != newRouteInfo["name"]) )
+		if (options["jump"] || !newRouteInfo["name"] || ( curRouteInfo["name"] != newRouteInfo["name"])
+			|| ( curRouteInfo["specName"] != newRouteInfo["specName"]) // <--- remove this when _update() is ready.
+		)
 		{
-			RouteOrganizer._jump(component, {"url":url});
+			RouteOrganizer._jump(component, {"url":newUrl});
 			return;
 		}
 
 		return Promise.resolve().then(() => {
-			// Validate URL
-			return RouteOrganizer._validateRoute(component, url);
-		}).then(() => {
 			// Replace URL
 			if (options["pushState"])
 			{
-				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, url);
+				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, newUrl);
 			}
 		}).then(() => {
-			// Load another component
-			if ( curRouteInfo["specName"] != newRouteInfo["specName"] )
+			// Validate URL
+			return RouteOrganizer._validateRoute(component, newUrl);
+		}).then(() => {
+			/*
+			// Load another component when new spec is different from current
+			if (curRouteInfo["specName"] != newRouteInfo["specName"])
 			{
 				return RouteOrganizer._update(component, newRouteInfo, options);
 			}
+			*/
 		}).then(() => {
 			// Refresh
 			return RouteOrganizer._refresh(component, routeInfo, options);
 		}).then(() => {
 			// Normalize URL
-			return RouteOrganizer._normalizeRoute(component, url);
-		}).then(() => {
-			if (routeInfo["dispUrl"])
-			{
-				// Replace url
-				history.replaceState(RouteOrganizer.__getState("_open.dispUrl", window.history.state), null, routeInfo["dispUrl"]);
-			}
+			return RouteOrganizer._normalizeRoute(component, window.location.href);
 		});
 
 	}
+
 	// -----------------------------------------------------------------------------
 
 	/**
@@ -366,10 +385,10 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	 * @param	{Object}		routeInfo			Route information.
 	 * @param	{Object}		options				Query options.
 	 */
-	static _jump(component, routeInfo)
+	static _jump(component, routeInfo, options)
 	{
 
-		let url = RouteOrganizer._buildUrl(routeInfo, component);
+		let url = RouteOrganizer._buildUrl(component, routeInfo, options);
 		window.location.href = url;
 
 	}
@@ -432,7 +451,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static _replace(component, routeInfo, options)
 	{
 
-		history.replaceState(RouteOrganizer.__getState("replaceRoute", window.history.state), null, RouteOrganizer._buildUrl(routeInfo, component));
+		history.replaceState(RouteOrganizer.__getState("replaceRoute", window.history.state), null, RouteOrganizer._buildUrl(component, routeInfo, options));
 		component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
 
 	}
@@ -524,43 +543,43 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		let routeName;
 		let parsedUrl = new URL(url, window.location.href);
 		let specName;
-		let componentName;
 		let params = {};
 
+		// Find a matching route
 		for (let i = component._routes.length - 1; i >= 0; i--)
 		{
 			// Check origin
-			if (!component._routes[i]["origin"] || (component._routes[i]["origin"] && parsedUrl.origin == component._routes[i]["origin"]))
+			if (component._routes[i]["origin"] && parsedUrl.origin != component._routes[i]["origin"])
 			{
-				// Check path
-				let result = ( !component._routes[i]["path"] ? [] : component._routes[i].re.exec(parsedUrl.pathname) );
-				if (result)
-				{
-					routeName = component._routes[i].name;
-					specName = ( component._routes[i].specName ? component._routes[i].specName : "" );
-					componentName = component._routes[i].componentName;
-					for (let j = 0; j < result.length - 1; j++)
-					{
-						params[component._routes[i].keys[j].name] = result[j + 1];
-						let keyName = component._routes[i].keys[j].name;
-						let value = result[j + 1];
-						specName = specName.replace("{{:" + keyName + "}}", value);
-					}
+				continue;
+			}
 
-					break;
+			// Check path
+			let result = ( !component._routes[i]["path"] ? [] : component._routes[i].re.exec(parsedUrl.pathname) );
+			if (result)
+			{
+				routeName = component._routes[i].name;
+				specName = ( component._routes[i].specName ? component._routes[i].specName : "" );
+				for (let j = 0; j < result.length - 1; j++)
+				{
+					params[component._routes[i].keys[j].name] = result[j + 1];
+					let keyName = component._routes[i].keys[j].name;
+					let value = result[j + 1];
+					specName = specName.replace("{{:" + keyName + "}}", value);
 				}
+
+				break;
 			}
 		}
 
 		routeInfo["name"] = routeName;
 		routeInfo["specName"] = specName;
-		routeInfo["componentName"] = componentName;
 		routeInfo["url"] = parsedUrl["href"];
 		routeInfo["path"] = parsedUrl.pathname;
 		routeInfo["query"] = parsedUrl.search;
 		routeInfo["parsedUrl"] = parsedUrl;
 		routeInfo["routeParameters"] = params;
-		routeInfo["queryParameters"] = RouteOrganizer._loadParameters();
+		routeInfo["queryParameters"] = RouteOrganizer._loadParameters(url);
 
 		return routeInfo;
 
@@ -580,7 +599,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			return Promise.resolve().then(() => {
 				return component.trigger("beforePopState");
 			}).then(() => {
-				return RouteOrganizer._open(component, {"url":window.location.href}, {"pushState":false});
+				return RouteOrganizer._open(component);
 			}).then(() => {
 				return component.trigger("afterPopState");
 			});

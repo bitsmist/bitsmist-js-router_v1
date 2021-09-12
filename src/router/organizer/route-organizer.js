@@ -267,6 +267,11 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				"validationName":	component.settings.get("settings.validationName")
 			});
 		}).then(() => {
+			if (component.settings.get("autoFixURL"))
+			{
+				return RouteOrganizer._fixRoute(component);
+			}
+		}).then(() => {
 			return component.trigger("doValidateURL");
 		}).then(() => {
 			return component.trigger("afterValidate");
@@ -277,6 +282,50 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				throw new Error("URL validation failed", component._validationResult["invalids"]);
 			}
 		});
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Fix route.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{String}		url					Url to validate.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static _fixRoute(component, url)
+	{
+
+		let isOk = true;
+		let newParams = RouteOrganizer._loadParameters();
+
+		// Fix invalid paramters
+		for (let i = 0; i < component.validationResult["invalids"].length; i++)
+		{
+			if ("fix" in component.validationResult["invalids"][i])
+			{
+				newParams[component.validationResult["invalids"][i]["key"]] = component.validationResult["invalids"][i]["fix"];
+			}
+			else if (component.validationResult["invalids"][i]["message"] == "notAllowed")
+			{
+				delete newParams[component.validationResult["invalids"][i]["key"]];
+			}
+			else
+			{
+				isOk = false;
+			}
+		}
+
+		if (isOk)
+		{
+			// Replace URL
+			RouteOrganizer._replace(component, {"queryParameters":newParams});
+
+			// Fixed
+			component.validationResult["result"] = true;
+		}
 
 	}
 

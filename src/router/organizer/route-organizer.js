@@ -267,7 +267,8 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				"validationName":	component.settings.get("settings.validationName")
 			});
 		}).then(() => {
-			if (component.settings.get("autoFixURL"))
+			// Fix URL
+			if (component.settings.get("settings.autoFixURL"))
 			{
 				return RouteOrganizer._fixRoute(component);
 			}
@@ -279,7 +280,45 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			// Validation failed?
 			if (!component._validationResult["result"])
 			{
-				throw new Error("URL validation failed", component._validationResult["invalids"]);
+				RouteOrganizer._dumpValidationErrors(component);
+				throw new Error("URL validation failed");
+			}
+		});
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Dump validation errors.
+	 *
+	 * @param	{Component}		component			Component.
+	 */
+	static _dumpValidationErrors(component)
+	{
+
+		Object.keys(component._validationResult["invalids"]).forEach((key) => {
+			let item = component._validationResult["invalids"][key];
+
+			if (item.failed)
+			{
+				for (let i = 0; i < item.failed.length; i++)
+				{
+					console.warn("URL validation failed.",
+						"key=" + item.key +
+						", value=" + item.value +
+						", rule=" + item.failed[i].rule +
+						", message=" + item.failed[i].message
+					);
+				}
+			}
+			else
+			{
+				console.warn("URL validation failed.",
+					"key=" + key +
+					", value=" + item.value +
+					", message=" + item.message
+				);
 			}
 		});
 
@@ -302,21 +341,22 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		let newParams = RouteOrganizer._loadParameters();
 
 		// Fix invalid paramters
-		for (let i = 0; i < component.validationResult["invalids"].length; i++)
-		{
-			if ("fix" in component.validationResult["invalids"][i])
+		Object.keys(component.validationResult["invalids"]).forEach((key) => {
+			let item = component.validationResult["invalids"][key];
+
+			if ("fix" in item)
 			{
-				newParams[component.validationResult["invalids"][i]["key"]] = component.validationResult["invalids"][i]["fix"];
+				newParams[item["key"]] = item["fix"];
 			}
-			else if (component.validationResult["invalids"][i]["message"] == "notAllowed")
+			else if (item["message"] == "notAllowed")
 			{
-				delete newParams[component.validationResult["invalids"][i]["key"]];
+				delete newParams[item["key"]];
 			}
 			else
 			{
 				isOk = false;
 			}
-		}
+		});
 
 		if (isOk)
 		{
@@ -535,7 +575,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}).then(() => {
 			return component.callOrganizers("afterSpecLoad", component._specs[specName]);
 		}).then(() => {
-			return component.trigger("afterSpecLoad", component, {"spec":component._specs[component._routeInfo["specName"]]});
+			return component.trigger("afterSpecLoad", {"spec":component._specs[component._routeInfo["specName"]]});
 		});
 
 	}
@@ -645,6 +685,8 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		window.addEventListener("popstate", (e) => {
+			component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
+
 			return Promise.resolve().then(() => {
 				return component.trigger("beforePopState");
 			}).then(() => {

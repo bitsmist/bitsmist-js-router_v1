@@ -50,7 +50,7 @@ Router.prototype.start = function(settings)
 	let defaults = {
 		"settings": {
 			"name":						"Router",
-			"autoFixURL":				true,
+			"autoFixURL":				false,
 			"autoSetup":				false,
 			"autoPostStart":			false,
 			"rootElement":				document.body,

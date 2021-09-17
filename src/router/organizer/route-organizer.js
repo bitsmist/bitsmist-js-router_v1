@@ -560,7 +560,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static __initSpec(component, specName)
 	{
 
-		BITSMIST.v1.Util.assert(specName, "A spec name not specified.", TypeError);
+		BITSMIST.v1.Util.assert(specName, "RouteOrganizer.__initSpec(): A spec name not specified.", TypeError);
 
 		return Promise.resolve().then(() => {
 			if (!component._specs[specName])

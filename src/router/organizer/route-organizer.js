@@ -171,7 +171,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			url += RouteOrganizer._buildUrlQuery(params);
 		}
 
-		return url;
+		return ( url ? url : "/" );
 
 	}
 
@@ -196,7 +196,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				{
 					result += encodeURIComponent(current) + "=" + encodeURIComponent(options[current].join()) + "&";
 				}
-				else if (options[current])
+				else if (options[current] != undefined)
 				{
 					result += encodeURIComponent(current) + "=" + encodeURIComponent(options[current]) + "&";
 				}
@@ -268,7 +268,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			});
 		}).then(() => {
 			// Fix URL
-			if (component.settings.get("settings.autoFixURL"))
+			if (!component._validationResult["result"] && component.settings.get("settings.autoFixURL"))
 			{
 				return RouteOrganizer._fixRoute(component);
 			}
@@ -281,7 +281,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			if (!component._validationResult["result"])
 			{
 				RouteOrganizer._dumpValidationErrors(component);
-				throw new Error("URL validation failed");
+				throw new URIError("URL validation failed.");
 			}
 		});
 
@@ -344,11 +344,11 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		Object.keys(component.validationResult["invalids"]).forEach((key) => {
 			let item = component.validationResult["invalids"][key];
 
-			if ("fix" in item)
+			if (item["fix"] !== undefined)
 			{
 				newParams[item["key"]] = item["fix"];
 			}
-			else if (item["message"] == "notAllowed")
+			else if (item["failed"][0]["validity"] === "notAllowed")
 			{
 				delete newParams[item["key"]];
 			}

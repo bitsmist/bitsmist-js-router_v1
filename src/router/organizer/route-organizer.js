@@ -196,7 +196,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				{
 					result += encodeURIComponent(current) + "=" + encodeURIComponent(options[current].join()) + "&";
 				}
-				else if (options[current] != undefined)
+				else if (options[current])
 				{
 					result += encodeURIComponent(current) + "=" + encodeURIComponent(options[current]) + "&";
 				}
@@ -308,17 +308,9 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 						"key=" + item.key +
 						", value=" + item.value +
 						", rule=" + item.failed[i].rule +
-						", message=" + item.failed[i].message
+						", validity=" + item.failed[i].validity
 					);
 				}
-			}
-			else
-			{
-				console.warn("URL validation failed.",
-					"key=" + key +
-					", value=" + item.value +
-					", message=" + item.message
-				);
 			}
 		});
 

@@ -67,14 +67,11 @@ Router.prototype.start = function(settings)
 		// super()
 		return BITSMIST.v1.Component.prototype.start.call(this, settings);
 	}).then(() => {
-		// Started
-		return this._postStart();
-	}).then(() => {
-		// Resume components
-		return BITSMIST.v1.StateOrganizer.globalResume();
-	}).then(() => {
 		// Load spec file
 		return RouteOrganizer.__initSpec(this, this._routeInfo["specName"]);
+	}).then(() => {
+		// Started
+		return this._postStart();
 	}).then(() => {
 		// Open route
 		return this.openRoute();

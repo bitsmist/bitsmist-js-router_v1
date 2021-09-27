@@ -36,20 +36,18 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		Object.defineProperty(component, 'routeInfo', { get() { return this._routeInfo; }, });
 		Object.defineProperty(component, 'specs', { get() { return this._specs; }, });
 		Object.defineProperty(component, 'spec', { get() { return this._spec; }, });
+		Object.defineProperty(component, "settings", { get() { return this._spec; }, }); // Tweak to see settings through spec
 
 		// Add methods
 		component.loadParameters = function(url) { return RouteOrganizer._loadParameters(url); }
-		component.validateRoute = function() { return RouteOrganizer._validateRoute(this); }
+		component.switchSpec = function(specName) { return RouteOrganizer._switchSpec(this, specName); }
 		component.openRoute = function(routeInfo, options) { return RouteOrganizer._open(this, routeInfo, options); }
-		component.replaceRoute = function(routeInfo, options) { return RouteOrganizer._replace(this, routeInfo, options); }
-		component.jumpRoute = function(routeInfo, options) { return RouteOrganizer._jump(this, routeInfo, options); }
-		component.refreshRoute = function(routeInfo, options) { return RouteOrganizer._refresh(this, routeInfo, options); }
-		component.updateRoute = function(routeInfo, options) { return RouteOrganizer._update(this, routeInfo, options); }
-
-		// Add properties
-		Object.defineProperty(component, "settings", {
-			get() { return this._spec; },
-		});
+		component.jumpRoute = function(routeInfo, options) { return RouteOrganizer._jumpRoute(this, routeInfo, options); }
+		component.updateRoute = function(routeInfo, options) { return RouteOrganizer._updateRoute(this, routeInfo, options); }
+		component.refreshRoute = function(routeInfo, options) { return RouteOrganizer._refreshRoute(this, routeInfo, options); }
+		component.replaceRoute = function(routeInfo, options) { return RouteOrganizer._replaceRoute(this, routeInfo, options); }
+		component.validateRoute = function() { return RouteOrganizer._validateRoute(this); }
+		component.normalizeRoute = function() { return RouteOrganizer._normalizeRoute(this); }
 
 		// Init vars
 		component._routes = [];
@@ -243,6 +241,192 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 	}
 
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Load a spec and init.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{String}		specName			Spec name.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static _switchSpec(component, specName)
+	{
+
+		BITSMIST.v1.Util.assert(specName, "RouteOrganizer._switchSpec(): A spec name not specified.", TypeError);
+
+		return Promise.resolve().then(() => {
+			if (!component._specs[specName])
+			{
+				return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then((spec) => {;
+					component._specs[specName] = spec;
+				});
+			}
+		}).then(() => {
+			component._spec.items = component._specs[specName];
+		}).then(() => {
+			return component.addOrganizers(component._specs[specName]);
+		}).then(() => {
+			return component.callOrganizers("afterSpecLoad", component._specs[specName]);
+		}).then(() => {
+			return component.trigger("afterSpecLoad", {"spec":component._specs[component._routeInfo["specName"]]});
+		});
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Open route.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{Object}		routeInfo			Route information.
+	 * @param	{Object}		options				Query options.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static _open(component, routeInfo, options)
+	{
+
+		options = Object.assign({}, options);
+		let pushState = BITSMIST.v1.Util.safeGet(options, "pushState", ( routeInfo ? true : false ));
+
+		// Current route info
+		let curRouteInfo = component._routeInfo;
+
+		let newUrl;
+		let newRouteInfo;
+		if (routeInfo)
+		{
+			newUrl = RouteOrganizer._buildUrl(component, routeInfo, options);
+			newRouteInfo = RouteOrganizer.__loadRouteInfo(component, newUrl);
+		}
+		else
+		{
+			newUrl = window.location.href;
+			newRouteInfo = curRouteInfo;
+		}
+
+		// Jump to another page
+		if (options["jump"] || !newRouteInfo["name"])
+		{
+			RouteOrganizer._jumpRoute(component, {"url":newUrl});
+			return;
+		}
+
+		return Promise.resolve().then(() => {
+			// Replace URL
+			if (pushState)
+			{
+				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, newUrl);
+				component._routeInfo = newRouteInfo;
+			}
+		}).then(() => {
+			// Load other component when new spec is different from the current spec
+			if (curRouteInfo["specName"] != newRouteInfo["specName"])
+			{
+				return RouteOrganizer._updateRoute(component, curRouteInfo, newRouteInfo, options);
+			}
+		}).then(() => {
+			// Validate URL
+			return RouteOrganizer._validateRoute(component, newUrl);
+		}).then(() => {
+			// Refresh
+			return RouteOrganizer._refreshRoute(component, newRouteInfo, options);
+		}).then(() => {
+			// Normalize URL
+			return RouteOrganizer._normalizeRoute(component, window.location.href);
+		});
+
+	}
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Jump to url.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{Object}		routeInfo			Route information.
+	 * @param	{Object}		options				Query options.
+	 */
+	static _jumpRoute(component, routeInfo, options)
+	{
+
+		let url = RouteOrganizer._buildUrl(component, routeInfo, options);
+		window.location.href = url;
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Update route.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{Object}		routeInfo			Route information.
+	 * @param	{Object}		options				Query options.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static _updateRoute(component, curRouteInfo, newRouteInfo, options)
+	{
+
+		return Promise.resolve().then(() => {
+			return component.changeState("routing");
+		}).then(() => {
+			return component.clearOrganizers("afterStart", component._specs[curRouteInfo["specName"]]);
+		}).then(() => {
+			return component.clearOrganizers("afterSpecLoad", component._specs[curRouteInfo["specName"]]);
+		}).then(() => {
+			return RouteOrganizer._switchSpec(component, newRouteInfo["specName"]);
+		}).then(() => {
+			// Started
+			return component._postStart();
+		});
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Refresh route.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{Object}		routeInfo			Route information.
+	 * @param	{Object}		options				Query options.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static _refreshRoute(component, routeInfo, options)
+	{
+
+		return Promise.resolve().then(() => {
+			return component.trigger("beforeRefresh");
+		}).then(() => {
+			return component.trigger("doRefresh");
+		}).then(() => {
+			return component.trigger("afterRefresh");
+		});
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Replace current url.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{Object}		routeInfo			Route information.
+	 * @param	{Object}		options				Query options.
+	 */
+	static _replaceRoute(component, routeInfo, options)
+	{
+
+		history.replaceState(RouteOrganizer.__getState("replaceRoute", window.history.state), null, RouteOrganizer._buildUrl(component, routeInfo, options));
+		component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
+
+	}
+
 	// -----------------------------------------------------------------------------
 
 	/**
@@ -270,7 +454,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			// Fix URL
 			if (!component._validationResult["result"] && component.settings.get("settings.autoFixURL"))
 			{
-				return RouteOrganizer._fixRoute(component);
+				return RouteOrganizer.__fixRoute(component, url);
 			}
 		}).then(() => {
 			return component.trigger("doValidateURL");
@@ -280,84 +464,10 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			// Validation failed?
 			if (!component._validationResult["result"])
 			{
-				RouteOrganizer._dumpValidationErrors(component);
+				RouteOrganizer.__dumpValidationErrors(component);
 				throw new URIError("URL validation failed.");
 			}
 		});
-
-	}
-
-	// -----------------------------------------------------------------------------
-
-	/**
-	 * Dump validation errors.
-	 *
-	 * @param	{Component}		component			Component.
-	 */
-	static _dumpValidationErrors(component)
-	{
-
-		Object.keys(component._validationResult["invalids"]).forEach((key) => {
-			let item = component._validationResult["invalids"][key];
-
-			if (item.failed)
-			{
-				for (let i = 0; i < item.failed.length; i++)
-				{
-					console.warn("URL validation failed.",
-						"key=" + item.key +
-						", value=" + item.value +
-						", rule=" + item.failed[i].rule +
-						", validity=" + item.failed[i].validity
-					);
-				}
-			}
-		});
-
-	}
-
-	// -----------------------------------------------------------------------------
-
-	/**
-	 * Fix route.
-	 *
-	 * @param	{Component}		component			Component.
-	 * @param	{String}		url					Url to validate.
-	 *
-	 * @return 	{Promise}		Promise.
-	 */
-	static _fixRoute(component, url)
-	{
-
-		let isOk = true;
-		let newParams = RouteOrganizer._loadParameters();
-
-		// Fix invalid paramters
-		Object.keys(component.validationResult["invalids"]).forEach((key) => {
-			let item = component.validationResult["invalids"][key];
-
-			if (item["fix"] !== undefined)
-			{
-				newParams[item["key"]] = item["fix"];
-			}
-			else if (item["failed"][0]["validity"] === "notAllowed")
-			{
-				delete newParams[item["key"]];
-			}
-			else
-			{
-				isOk = false;
-			}
-		});
-
-		if (isOk)
-		{
-			// Replace URL
-			RouteOrganizer._replace(component, {"queryParameters":newParams});
-
-			// Fixed
-			component.validationResult["result"] = true;
-		}
 
 	}
 
@@ -384,191 +494,24 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 	}
 
-	// -----------------------------------------------------------------------------
-
-	/**
-	 * Open route.
-	 *
-	 * @param	{Component}		component			Component.
-	 * @param	{Object}		routeInfo			Route information.
-	 * @param	{Object}		options				Query options.
-	 *
-	 * @return 	{Promise}		Promise.
-	 */
-	static _open(component, routeInfo, options)
-	{
-
-		options = Object.assign({}, options);
-		let newRouteInfo;
-		let newUrl;
-
-		// Current route info
-		let curRouteInfo = component._routeInfo;
-		let curUrl = window.location.href;
-
-		// New route info
-		if (routeInfo)
-		{
-			newUrl = RouteOrganizer._buildUrl(component, routeInfo, options);
-			newRouteInfo = RouteOrganizer.__loadRouteInfo(component, newUrl);
-			component._routeInfo = newRouteInfo;
-			options["pushState"] = BITSMIST.v1.Util.safeGet(options, "pushState", true);
-		}
-		else
-		{
-			newUrl = window.location.href;
-			newRouteInfo = curRouteInfo;
-			options["pushState"] = false;
-		}
-
-		// Jump to another page
-		if (options["jump"] || !newRouteInfo["name"] || ( curRouteInfo["name"] != newRouteInfo["name"])
-			|| ( curRouteInfo["specName"] != newRouteInfo["specName"]) // <--- remove this when _update() is ready.
-		)
-		{
-			RouteOrganizer._jump(component, {"url":newUrl});
-			return;
-		}
-
-		return Promise.resolve().then(() => {
-			// Replace URL
-			if (options["pushState"])
-			{
-				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, newUrl);
-			}
-		}).then(() => {
-			// Validate URL
-			return RouteOrganizer._validateRoute(component, newUrl);
-		}).then(() => {
-			/*
-			// Load another component when new spec is different from current
-			if (curRouteInfo["specName"] != newRouteInfo["specName"])
-			{
-				return RouteOrganizer._update(component, newRouteInfo, options);
-			}
-			*/
-		}).then(() => {
-			// Refresh
-			return RouteOrganizer._refresh(component, routeInfo, options);
-		}).then(() => {
-			// Normalize URL
-			return RouteOrganizer._normalizeRoute(component, window.location.href);
-		});
-
-	}
-
-	// -----------------------------------------------------------------------------
-
-	/**
-	 * Jump to url.
-	 *
-	 * @param	{Component}		component			Component.
-	 * @param	{Object}		routeInfo			Route information.
-	 * @param	{Object}		options				Query options.
-	 */
-	static _jump(component, routeInfo, options)
-	{
-
-		let url = RouteOrganizer._buildUrl(component, routeInfo, options);
-		window.location.href = url;
-
-	}
-
-	// -----------------------------------------------------------------------------
-
-	/**
-	 * Refresh route.
-	 *
-	 * @param	{Component}		component			Component.
-	 * @param	{Object}		routeInfo			Route information.
-	 * @param	{Object}		options				Query options.
-	 *
-	 * @return 	{Promise}		Promise.
-	 */
-	static _refresh(component, routeInfo, options)
-	{
-
-		return Promise.resolve().then(() => {
-			return component.trigger("beforeRefresh");
-		}).then(() => {
-			return component.trigger("doRefresh");
-		}).then(() => {
-			return component.trigger("afterRefresh");
-		});
-
-	}
-
-	// -----------------------------------------------------------------------------
-
-	/**
-	 * Update route.
-	 *
-	 * @param	{Component}		component			Component.
-	 * @param	{Object}		routeInfo			Route information.
-	 * @param	{Object}		options				Query options.
-	 *
-	 * @return 	{Promise}		Promise.
-	 */
-	static _update(component, routeInfo, options)
-	{
-
-		return Promise.resolve().then(() => {
-			return component.clearOrganizers();
-		}).then(() => {
-			return RouteOrganizer.__initSpec(component, routeInfo["specName"]);
-		});
-
-	}
-
-	// -----------------------------------------------------------------------------
-
-	/**
-	 * Replace current url.
-	 *
-	 * @param	{Component}		component			Component.
-	 * @param	{Object}		routeInfo			Route information.
-	 * @param	{Object}		options				Query options.
-	 */
-	static _replace(component, routeInfo, options)
-	{
-
-		history.replaceState(RouteOrganizer.__getState("replaceRoute", window.history.state), null, RouteOrganizer._buildUrl(component, routeInfo, options));
-		component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
-
-	}
-
 	// -------------------------------------------------------------------------
 	//  Privates
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Load a spec and init.
+	 * Get settings from element's attribute.
 	 *
 	 * @param	{Component}		component			Component.
-	 * @param	{String}		specName			Spec name.
-	 *
-	 * @return 	{Promise}		Promise.
 	 */
-	static __initSpec(component, specName)
+	static __loadAttrSettings(component)
 	{
 
-		BITSMIST.v1.Util.assert(specName, "RouteOrganizer.__initSpec(): A spec name not specified.", TypeError);
-
-		return Promise.resolve().then(() => {
-			if (!component._specs[specName])
-			{
-				return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then((spec) => {;
-					component._specs[specName] = spec;
-					component._spec.items = spec;
-				});
-			}
-		}).then(() => {
-			return component.addOrganizers(component._specs[specName]);
-		}).then(() => {
-			return component.callOrganizers("afterSpecLoad", component._specs[specName]);
-		}).then(() => {
-			return component.trigger("afterSpecLoad", {"spec":component._specs[component._routeInfo["specName"]]});
-		});
+		// Get spec path from  bm-specpath
+		let path = component.getAttribute("bm-specpath");
+		if (path)
+		{
+			component.settings.set("system.specPath", path);
+		}
 
 	}
 
@@ -718,19 +661,74 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	// -----------------------------------------------------------------------------
 
 	/**
-	 * Get settings from element's attribute.
+	 * Fix route.
+	 *
+	 * @param	{Component}		component			Component.
+	 * @param	{String}		url					Url to validate.
+	 *
+	 * @return 	{Promise}		Promise.
+	 */
+	static __fixRoute(component, url)
+	{
+
+		let isOk = true;
+		let newParams = RouteOrganizer._loadParameters(url);
+
+		// Fix invalid paramters
+		Object.keys(component.validationResult["invalids"]).forEach((key) => {
+			let item = component.validationResult["invalids"][key];
+
+			if (item["fix"] !== undefined)
+			{
+				newParams[item["key"]] = item["fix"];
+			}
+			else if (item["failed"][0]["validity"] === "notAllowed")
+			{
+				delete newParams[item["key"]];
+			}
+			else
+			{
+				isOk = false;
+			}
+		});
+
+		if (isOk)
+		{
+			// Replace URL
+			RouteOrganizer._replaceRoute(component, {"queryParameters":newParams});
+
+			// Fixed
+			component.validationResult["result"] = true;
+		}
+
+	}
+
+	// -----------------------------------------------------------------------------
+
+	/**
+	 * Dump validation errors.
 	 *
 	 * @param	{Component}		component			Component.
 	 */
-	static __loadAttrSettings(component)
+	static __dumpValidationErrors(component)
 	{
 
-		// Get spec path from  bm-specpath
-		let path = component.getAttribute("bm-specpath");
-		if (path)
-		{
-			component.settings.set("system.specPath", path);
-		}
+		Object.keys(component._validationResult["invalids"]).forEach((key) => {
+			let item = component._validationResult["invalids"][key];
+
+			if (item.failed)
+			{
+				for (let i = 0; i < item.failed.length; i++)
+				{
+					console.warn("URL validation failed.",
+						"key=" + item.key +
+						", value=" + item.value +
+						", rule=" + item.failed[i].rule +
+						", validity=" + item.failed[i].validity
+					);
+				}
+			}
+		});
 
 	}
 

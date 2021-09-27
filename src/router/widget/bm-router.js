@@ -51,8 +51,10 @@ Router.prototype.start = function(settings)
 		"settings": {
 			"name":						"Router",
 			"autoFixURL":				false,
+			"autoFetch":				false,
 			"autoSetup":				false,
 			"autoPostStart":			false,
+			"autoRefreshOnStart":		false,
 			"rootElement":				document.body,
 			"ignoreGlobalSuspend":		true,
 		},
@@ -68,7 +70,7 @@ Router.prototype.start = function(settings)
 		return BITSMIST.v1.Component.prototype.start.call(this, settings);
 	}).then(() => {
 		// Load spec file
-		return this.switchSpec(this._routeInfo["specName"]);
+		return this.switchSpec(this.routeInfo["specName"]);
 	}).then(() => {
 		// Started
 		return this._postStart();

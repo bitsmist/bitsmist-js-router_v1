@@ -68,7 +68,7 @@ Router.prototype.start = function(settings)
 		return BITSMIST.v1.Component.prototype.start.call(this, settings);
 	}).then(() => {
 		// Load spec file
-		return RouteOrganizer.__initSpec(this, this._routeInfo["specName"]);
+		return this.switchSpec(this._routeInfo["specName"]);
 	}).then(() => {
 		// Started
 		return this._postStart();

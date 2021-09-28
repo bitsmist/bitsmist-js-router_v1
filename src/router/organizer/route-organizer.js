@@ -322,8 +322,8 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 			if (pushState)
 			{
 				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, newUrl);
-				component._routeInfo = newRouteInfo;
 			}
+			component._routeInfo = newRouteInfo;
 		}).then(() => {
 			// Load other component when new spec is different from the current spec
 			if (curRouteInfo["specName"] != newRouteInfo["specName"])
@@ -616,12 +616,10 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		window.addEventListener("popstate", (e) => {
-			component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
-
 			return Promise.resolve().then(() => {
 				return component.trigger("beforePopState");
 			}).then(() => {
-				return RouteOrganizer._open(component);
+				return RouteOrganizer._open(component, {"url":window.location.href}, {"pushState":false});
 			}).then(() => {
 				return component.trigger("afterPopState");
 			});

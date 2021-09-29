@@ -51,7 +51,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		// Init vars
 		component._routes = [];
 		component._specs = {};
-		component._spec = new BITSMIST.v1.ChainableStore({"chain":component.settings});
+		component._spec = new BITSMIST.v1.ChainableStore({"chain":component.settings, "writeThrough":true});
 		Object.defineProperty(component, "settings", { get() { return this._spec; }, }); // Tweak to see settings through spec
 
 		// Init popstate handler
@@ -80,8 +80,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		RouteOrganizer.__loadAttrSettings(component);
 
 		// Load route info
-		//let routes = settings["routes"];
-		let routes = component.settings.get("routes");
+		let routes = settings["routes"];
 		if (routes)
 		{
 			for(let i = 0; i < routes.length; i++)
@@ -311,7 +310,9 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}
 
 		// Jump to another page
-		if (options["jump"] || !newRouteInfo["name"])
+		if (options["jump"] || !newRouteInfo["name"]
+				|| ( curRouteInfo["specName"] != newRouteInfo["specName"]) // <--- remove this when _update() is ready.
+		)
 		{
 			RouteOrganizer._jumpRoute(component, {"url":newUrl});
 			return;

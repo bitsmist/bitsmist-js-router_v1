@@ -54,7 +54,7 @@ Router.prototype.start = function(settings)
 			"autoFetch":				false,
 			"autoSetup":				false,
 			"autoPostStart":			false,
-			"autoRefreshOnStart":		false,
+			"autoRefresh":				false,
 			"rootElement":				document.body,
 			"ignoreGlobalSuspend":		true,
 		},

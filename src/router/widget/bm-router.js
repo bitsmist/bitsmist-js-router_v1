@@ -55,10 +55,12 @@ Router.prototype.start = function(settings)
 			"autoSetup":				false,
 			"autoPostStart":			false,
 			"autoRefresh":				false,
+			"hasTemplate":				false,
 			"rootElement":				document.body,
 			"ignoreGlobalSuspend":		true,
 		},
 		"organizers": {
+			"AutoloadOrganizer":		{"settings":{"attach":false}},
 			"RouteOrganizer":			{"settings":{"attach":true}},
 			"ValidationOrganizer":		{"settings":{"attach":true}},
 		}

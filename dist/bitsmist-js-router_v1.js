@@ -1058,11 +1058,13 @@
     			"autoFetch":				false,
     			"autoSetup":				false,
     			"autoPostStart":			false,
-    			"autoRefreshOnStart":		false,
+    			"autoRefresh":				false,
+    			"hasTemplate":				false,
     			"rootElement":				document.body,
     			"ignoreGlobalSuspend":		true,
     		},
     		"organizers": {
+    			"AutoloadOrganizer":		{"settings":{"attach":false}},
     			"RouteOrganizer":			{"settings":{"attach":true}},
     			"ValidationOrganizer":		{"settings":{"attach":true}},
     		}

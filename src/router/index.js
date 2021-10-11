@@ -4,7 +4,7 @@ window.BITSMIST.v1 = window.BITSMIST.v1 || {};
 // Organizer
 
 import RouteOrganizer from './organizer/route-organizer';
-BITSMIST.v1.OrganizerOrganizer.organizers.set("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":900});
+BITSMIST.v1.OrganizerOrganizer.register("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":900});
 
 // Widget
 

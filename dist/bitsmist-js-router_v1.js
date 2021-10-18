@@ -814,8 +814,7 @@
 
     		// Load specs
     		var type = "js";
-    //		promises.push(BITSMIST.v1.SettingOrganizer.loadSetting(component, "common", path, type));
-    		promises.push(BITSMIST.v1.SettingOrganizer.loadSetting(component, specName, path, type));
+    		promises.push(component.loadSettingFile(specName, path, type));
 
     		return Promise.all(promises).then(function (result) {
     			spec = result[0];
@@ -1089,7 +1088,7 @@
 
     window.BITSMIST = window.BITSMIST || {};
     window.BITSMIST.v1 = window.BITSMIST.v1 || {};
-    BITSMIST.v1.OrganizerOrganizer.organizers.set("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":900});
+    BITSMIST.v1.OrganizerOrganizer.register("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":900});
     window.BITSMIST.v1.Router = Router;
 
 }());

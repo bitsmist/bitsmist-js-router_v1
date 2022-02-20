@@ -45,7 +45,7 @@
                     break;
                 }
                 if (!name)
-                    { throw new TypeError("Missing parameter name at " + i); }
+                    throw new TypeError("Missing parameter name at " + i);
                 tokens.push({ type: "NAME", index: i, value: name });
                 i = j;
                 continue;
@@ -78,9 +78,9 @@
                     pattern += str[j++];
                 }
                 if (count)
-                    { throw new TypeError("Unbalanced pattern at " + i); }
+                    throw new TypeError("Unbalanced pattern at " + i);
                 if (!pattern)
-                    { throw new TypeError("Missing pattern at " + i); }
+                    throw new TypeError("Missing pattern at " + i);
                 tokens.push({ type: "PATTERN", index: i, value: pattern });
                 i = j;
                 continue;
@@ -104,12 +104,12 @@
         var path = "";
         var tryConsume = function (type) {
             if (i < tokens.length && tokens[i].type === type)
-                { return tokens[i++].value; }
+                return tokens[i++].value;
         };
         var mustConsume = function (type) {
             var value = tryConsume(type);
             if (value !== undefined)
-                { return value; }
+                return value;
             var _a = tokens[i], nextType = _a.type, index = _a.index;
             throw new TypeError("Unexpected " + nextType + " at " + index + ", expected " + type);
         };
@@ -191,7 +191,7 @@
      */
     function regexpToRegexp(path, keys) {
         if (!keys)
-            { return path; }
+            return path;
         var groupsRegex = /\((?:\?<(.*?)>)?(?!\?)/g;
         var index = 0;
         var execResult = groupsRegex.exec(path.source);
@@ -241,7 +241,7 @@
                 var suffix = escapeString(encode(token.suffix));
                 if (token.pattern) {
                     if (keys)
-                        { keys.push(token); }
+                        keys.push(token);
                     if (prefix || suffix) {
                         if (token.modifier === "+" || token.modifier === "*") {
                             var mod = token.modifier === "*" ? "?" : "";
@@ -262,7 +262,7 @@
         }
         if (end) {
             if (!strict)
-                { route += delimiter + "?"; }
+                route += delimiter + "?";
             route += !options.endsWith ? "$" : "(?=" + endsWith + ")";
         }
         else {
@@ -289,9 +289,9 @@
      */
     function pathToRegexp(path, keys, options) {
         if (path instanceof RegExp)
-            { return regexpToRegexp(path, keys); }
+            return regexpToRegexp(path, keys);
         if (Array.isArray(path))
-            { return arrayToRegexp(path, keys, options); }
+            return arrayToRegexp(path, keys, options);
         return stringToRegexp(path, keys, options);
     }
 
@@ -301,22 +301,28 @@
     //	Route organizer class
     // =============================================================================
 
-    var RouteOrganizer = /*@__PURE__*/(function (superclass) {
-    	function RouteOrganizer () {
-    		superclass.apply(this, arguments);
-    	}
+    class RouteOrganizer extends BITSMIST.v1.Organizer
+    {
 
-    	if ( superclass ) RouteOrganizer.__proto__ = superclass;
-    	RouteOrganizer.prototype = Object.create( superclass && superclass.prototype );
-    	RouteOrganizer.prototype.constructor = RouteOrganizer;
+    	// -------------------------------------------------------------------------
+    	//  Methods
+    	// -------------------------------------------------------------------------
 
-    	RouteOrganizer.init = function init (component, settings)
+    	/**
+    	 * Init.
+    	 *
+    	 * @param	{Component}		component			Component.
+    	 * @param	{Object}		settings			Settings.
+    	 *
+    	 * @return 	{Promise}		Promise.
+    	 */
+    	static init(component, settings)
     	{
 
     		// Add properties
-    		Object.defineProperty(component, 'routeInfo', { get: function get() { return this._routeInfo; }, });
-    		Object.defineProperty(component, 'specs', { get: function get() { return this._specs; }, });
-    		Object.defineProperty(component, 'spec', { get: function get() { return this._spec; }, });
+    		Object.defineProperty(component, 'routeInfo', { get() { return this._routeInfo; }, });
+    		Object.defineProperty(component, 'specs', { get() { return this._specs; }, });
+    		Object.defineProperty(component, 'spec', { get() { return this._spec; }, });
 
     		// Add methods
     		component.loadParameters = function(url) { return RouteOrganizer._loadParameters(url); };
@@ -333,7 +339,7 @@
     		component._routes = [];
     		component._specs = {};
     		component._spec = new BITSMIST.v1.ChainableStore({"chain":component.settings, "writeThrough":true});
-    		Object.defineProperty(component, "settings", { get: function get() { return this._spec; }, }); // Tweak to see settings through spec
+    		Object.defineProperty(component, "settings", { get() { return this._spec; }, }); // Tweak to see settings through spec
 
     		// Init popstate handler
     		RouteOrganizer.__initPopState(component);
@@ -341,7 +347,7 @@
     		// Set state on the first page
     		history.replaceState(RouteOrganizer.__getState("connect"), null, null);
 
-    	};
+    	}
 
     	// -------------------------------------------------------------------------
 
@@ -354,17 +360,17 @@
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	RouteOrganizer.organize = function organize (conditions, component, settings)
+    	static organize(conditions, component, settings)
     	{
 
     		// Load settings from attributes
     		RouteOrganizer.__loadAttrSettings(component);
 
     		// Load route info
-    		var routes = settings["routes"];
+    		let routes = settings["routes"];
     		if (routes)
     		{
-    			for(var i = 0; i < routes.length; i++)
+    			for(let i = 0; i < routes.length; i++)
     			{
     				RouteOrganizer._addRoute(component, routes[i]);
     			}
@@ -374,15 +380,15 @@
     		component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
 
     		// Load spec info
-    		var specs = component.settings.get("specs");
+    		let specs = component.settings.get("specs");
     		if (specs)
     		{
-    			Object.keys(specs).forEach(function (key) {
+    			Object.keys(specs).forEach((key) => {
     				component._specs[key] = specs[key];
     			});
     		}
 
-    	};
+    	}
 
     	// -------------------------------------------------------------------------
     	//  Protected
@@ -395,11 +401,11 @@
     	 * @param	{Object}		routeInfo			Route info.
     	 * @param	{Boolean}		first				Add to top when true.
     	 */
-    	RouteOrganizer._addRoute = function _addRoute (component, routeInfo, first)
+    	static _addRoute(component, routeInfo, first)
     	{
 
-    		var keys = [];
-    		var route = {
+    		let keys = [];
+    		let route = {
     			"origin": routeInfo["origin"],
     			"name": routeInfo["name"],
     			"path": routeInfo["path"],
@@ -418,7 +424,7 @@
     			component._routes.push(route);
     		}
 
-    	};
+    	}
 
     	// -------------------------------------------------------------------------
 
@@ -431,10 +437,10 @@
     	 *
     	 * @return  {String}		Url.
     	 */
-    	RouteOrganizer._buildUrl = function _buildUrl (component, routeInfo, options)
+    	static _buildUrl(component, routeInfo, options)
     	{
 
-    		var url = "";
+    		let url = "";
 
     		url += ( routeInfo["url"] ? routeInfo["url"] : "" );
     		url += ( routeInfo["path"] ? routeInfo["path"] : "" );
@@ -442,7 +448,7 @@
 
     		if (routeInfo["queryParameters"])
     		{
-    			var params = {};
+    			let params = {};
     			if (options && options["mergeParameters"])
     			{
     				params = Object.assign(params, component.routeInfo["queryParameters"]);
@@ -453,7 +459,7 @@
 
     		return ( url ? url : "/" );
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -464,14 +470,14 @@
     	 *
     	 * @return	{String}		Query string.
     	 */
-    	RouteOrganizer._buildUrlQuery = function _buildUrlQuery (options)
+    	static _buildUrlQuery(options)
     	{
 
-    		var query = "";
+    		let query = "";
 
     		if (options)
     		{
-    			query = Object.keys(options).reduce(function (result, current) {
+    			query = Object.keys(options).reduce((result, current) => {
     				if (Array.isArray(options[current]))
     				{
     					result += encodeURIComponent(current) + "=" + encodeURIComponent(options[current].join()) + "&";
@@ -487,7 +493,7 @@
 
     		return ( query ? "?" + query.slice(0, -1) : "");
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -496,19 +502,19 @@
     	 *
     	 * @return  {Array}			Options array.
     	 */
-    	RouteOrganizer._loadParameters = function _loadParameters (url)
+    	static _loadParameters(url)
     	{
 
     		url = url || window.location.href;
-    		var vars = {};
-    		var hash;
-    		var value;
+    		let vars = {};
+    		let hash;
+    		let value;
 
     		if (window.location.href.indexOf("?") > -1)
     		{
-    			var hashes = url.slice(url.indexOf('?') + 1).split('&');
+    			let hashes = url.slice(url.indexOf('?') + 1).split('&');
 
-    			for(var i = 0; i < hashes.length; i++) {
+    			for(let i = 0; i < hashes.length; i++) {
     				hash = hashes[i].split('=');
     				if (hash[1]){
     					value = hash[1].split('#')[0];
@@ -521,7 +527,7 @@
 
     		return vars;
 
-    	};
+    	}
 
     	// -------------------------------------------------------------------------
 
@@ -533,28 +539,28 @@
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	RouteOrganizer._switchSpec = function _switchSpec (component, specName)
+    	static _switchSpec(component, specName)
     	{
 
     		BITSMIST.v1.Util.assert(specName, "RouteOrganizer._switchSpec(): A spec name not specified.", TypeError);
 
-    		return Promise.resolve().then(function () {
+    		return Promise.resolve().then(() => {
     			if (!component._specs[specName])
     			{
-    				return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then(function (spec) {					component._specs[specName] = spec;
+    				return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then((spec) => {					component._specs[specName] = spec;
     				});
     			}
-    		}).then(function () {
+    		}).then(() => {
     			component._spec.items = component._specs[specName];
-    		}).then(function () {
+    		}).then(() => {
     			return component.addOrganizers(component._specs[specName]);
-    		}).then(function () {
+    		}).then(() => {
     			return component.callOrganizers("afterSpecLoad", component._specs[specName]);
-    		}).then(function () {
+    		}).then(() => {
     			return component.trigger("afterSpecLoad", {"spec":component._specs[component._routeInfo["specName"]]});
     		});
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -567,17 +573,17 @@
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	RouteOrganizer._open = function _open (component, routeInfo, options)
+    	static _open(component, routeInfo, options)
     	{
 
     		options = Object.assign({}, options);
-    		var pushState = BITSMIST.v1.Util.safeGet(options, "pushState", ( routeInfo ? true : false ));
+    		let pushState = BITSMIST.v1.Util.safeGet(options, "pushState", ( routeInfo ? true : false ));
 
     		// Current route info
-    		var curRouteInfo = component._routeInfo;
+    		let curRouteInfo = component._routeInfo;
 
-    		var newUrl;
-    		var newRouteInfo;
+    		let newUrl;
+    		let newRouteInfo;
     		if (routeInfo)
     		{
     			newUrl = RouteOrganizer._buildUrl(component, routeInfo, options);
@@ -598,31 +604,31 @@
     			return;
     		}
 
-    		return Promise.resolve().then(function () {
+    		return Promise.resolve().then(() => {
     			// Replace URL
     			if (pushState)
     			{
     				history.pushState(RouteOrganizer.__getState("_open.pushState"), null, newUrl);
     			}
     			component._routeInfo = newRouteInfo;
-    		}).then(function () {
+    		}).then(() => {
     			// Load other component when new spec is different from the current spec
     			if (curRouteInfo["specName"] != newRouteInfo["specName"])
     			{
     				return RouteOrganizer._updateRoute(component, curRouteInfo, newRouteInfo, options);
     			}
-    		}).then(function () {
+    		}).then(() => {
     			// Validate URL
     			return RouteOrganizer._validateRoute(component, newUrl);
-    		}).then(function () {
+    		}).then(() => {
     			// Refresh
     			return RouteOrganizer._refreshRoute(component, newRouteInfo, options);
-    		}).then(function () {
+    		}).then(() => {
     			// Normalize URL
     			return RouteOrganizer._normalizeRoute(component, window.location.href);
     		});
 
-    	};
+    	}
     	// -----------------------------------------------------------------------------
 
     	/**
@@ -632,13 +638,13 @@
     	 * @param	{Object}		routeInfo			Route information.
     	 * @param	{Object}		options				Query options.
     	 */
-    	RouteOrganizer._jumpRoute = function _jumpRoute (component, routeInfo, options)
+    	static _jumpRoute(component, routeInfo, options)
     	{
 
-    		var url = RouteOrganizer._buildUrl(component, routeInfo, options);
+    		let url = RouteOrganizer._buildUrl(component, routeInfo, options);
     		window.location.href = url;
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -651,23 +657,23 @@
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	RouteOrganizer._updateRoute = function _updateRoute (component, curRouteInfo, newRouteInfo, options)
+    	static _updateRoute(component, curRouteInfo, newRouteInfo, options)
     	{
 
-    		return Promise.resolve().then(function () {
+    		return Promise.resolve().then(() => {
     			return component.changeState("routing");
-    		}).then(function () {
+    		}).then(() => {
     			return component.clearOrganizers("afterStart", component._specs[curRouteInfo["specName"]]);
-    		}).then(function () {
+    		}).then(() => {
     			return component.clearOrganizers("afterSpecLoad", component._specs[curRouteInfo["specName"]]);
-    		}).then(function () {
+    		}).then(() => {
     			return RouteOrganizer._switchSpec(component, newRouteInfo["specName"]);
-    		}).then(function () {
+    		}).then(() => {
     			// Started
     			return component._postStart();
     		});
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -680,12 +686,12 @@
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	RouteOrganizer._refreshRoute = function _refreshRoute (component, routeInfo, options)
+    	static _refreshRoute(component, routeInfo, options)
     	{
 
     		return component.refresh();
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -696,13 +702,13 @@
     	 * @param	{Object}		routeInfo			Route information.
     	 * @param	{Object}		options				Query options.
     	 */
-    	RouteOrganizer._replaceRoute = function _replaceRoute (component, routeInfo, options)
+    	static _replaceRoute(component, routeInfo, options)
     	{
 
     		history.replaceState(RouteOrganizer.__getState("replaceRoute", window.history.state), null, RouteOrganizer._buildUrl(component, routeInfo, options));
     		component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -714,30 +720,30 @@
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	RouteOrganizer._validateRoute = function _validateRoute (component, url)
+    	static _validateRoute(component, url)
     	{
 
     		component.validationResult["result"] = true;
 
-    		return Promise.resolve().then(function () {
+    		return Promise.resolve().then(() => {
     			return component.trigger("beforeValidate");
-    		}).then(function () {
+    		}).then(() => {
     			// Validate URL (by organizers)
     			return component.callOrganizers("doCheckValidity", {
     				"item":				RouteOrganizer._loadParameters(url),
     				"validationName":	component.settings.get("settings.validationName")
     			});
-    		}).then(function () {
+    		}).then(() => {
     			// Fix URL
     			if (!component.validationResult["result"] && component.settings.get("settings.autoFixURL"))
     			{
     				return RouteOrganizer.__fixRoute(component, url);
     			}
-    		}).then(function () {
+    		}).then(() => {
     			return component.trigger("doValidateURL");
-    		}).then(function () {
+    		}).then(() => {
     			return component.trigger("afterValidate");
-    		}).then(function () {
+    		}).then(() => {
     			// Validation failed?
     			if (!component.validationResult["result"])
     			{
@@ -746,7 +752,7 @@
     			}
     		});
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -758,18 +764,18 @@
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	RouteOrganizer._normalizeRoute = function _normalizeRoute (component, url)
+    	static _normalizeRoute(component, url)
     	{
 
-    		return Promise.resolve().then(function () {
+    		return Promise.resolve().then(() => {
     			return component.trigger("beforeNormalizeURL");
-    		}).then(function () {
+    		}).then(() => {
     			return component.trigger("doNormalizeURL");
-    		}).then(function () {
+    		}).then(() => {
     			return component.trigger("afterNormalizeURL");
     		});
 
-    	};
+    	}
 
     	// -------------------------------------------------------------------------
     	//  Privates
@@ -780,17 +786,17 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 */
-    	RouteOrganizer.__loadAttrSettings = function __loadAttrSettings (component)
+    	static __loadAttrSettings(component)
     	{
 
     		// Get spec path from  bm-specpath
-    		var path = component.getAttribute("bm-specpath");
+    		let path = component.getAttribute("bm-specpath");
     		if (path)
     		{
     			component.settings.set("system.specPath", path);
     		}
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -803,20 +809,20 @@
     	 *
     	 * @return  {Promise}		Promise.
     	 */
-    	RouteOrganizer.__loadSpec = function __loadSpec (component, specName, path)
+    	static __loadSpec(component, specName, path)
     	{
 
-    		var spec;
+    		let spec;
     //		let specCommon;
-    		var promises = [];
+    		let promises = [];
 
-    		console.debug(("RouteOrganizer._loadSpec(): Loading spec file. name=" + (component.name) + ", specName=" + specName + ", path=" + path));
+    		console.debug(`RouteOrganizer._loadSpec(): Loading spec file. name=${component.name}, specName=${specName}, path=${path}`);
 
     		// Load specs
-    		var type = "js";
+    		let type = "js";
     		promises.push(component.loadSettingFile(specName, path, type));
 
-    		return Promise.all(promises).then(function (result) {
+    		return Promise.all(promises).then((result) => {
     			spec = result[0];
     //			specCommon = result[0];
     //			spec = BITSMIST.v1.Util.deepMerge(specCommon, result[1]);
@@ -824,7 +830,7 @@
     			return spec;
     		});
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -836,17 +842,17 @@
     	 *
     	 * @return  {Object}		Route info.
     	 */
-    	RouteOrganizer.__loadRouteInfo = function __loadRouteInfo (component, url)
+    	static __loadRouteInfo(component, url)
     	{
 
-    		var routeInfo = {};
-    		var routeName;
-    		var parsedUrl = new URL(url, window.location.href);
-    		var specName;
-    		var params = {};
+    		let routeInfo = {};
+    		let routeName;
+    		let parsedUrl = new URL(url, window.location.href);
+    		let specName;
+    		let params = {};
 
     		// Find a matching route
-    		for (var i = component._routes.length - 1; i >= 0; i--)
+    		for (let i = component._routes.length - 1; i >= 0; i--)
     		{
     			// Check origin
     			if (component._routes[i]["origin"] && parsedUrl.origin != component._routes[i]["origin"])
@@ -855,16 +861,16 @@
     			}
 
     			// Check path
-    			var result = ( !component._routes[i]["path"] ? [] : component._routes[i].re.exec(parsedUrl.pathname) );
+    			let result = ( !component._routes[i]["path"] ? [] : component._routes[i].re.exec(parsedUrl.pathname) );
     			if (result)
     			{
     				routeName = component._routes[i].name;
     				specName = ( component._routes[i].specName ? component._routes[i].specName : "" );
-    				for (var j = 0; j < result.length - 1; j++)
+    				for (let j = 0; j < result.length - 1; j++)
     				{
     					params[component._routes[i].keys[j].name] = result[j + 1];
-    					var keyName = component._routes[i].keys[j].name;
-    					var value = result[j + 1];
+    					let keyName = component._routes[i].keys[j].name;
+    					let value = result[j + 1];
     					specName = specName.replace("{{:" + keyName + "}}", value);
     				}
 
@@ -883,7 +889,7 @@
 
     		return routeInfo;
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -892,20 +898,20 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 */
-    	RouteOrganizer.__initPopState = function __initPopState (component)
+    	static __initPopState(component)
     	{
 
-    		window.addEventListener("popstate", function (e) {
-    			return Promise.resolve().then(function () {
+    		window.addEventListener("popstate", (e) => {
+    			return Promise.resolve().then(() => {
     				return component.trigger("beforePopState");
-    			}).then(function () {
+    			}).then(() => {
     				return RouteOrganizer._open(component, {"url":window.location.href}, {"pushState":false});
-    			}).then(function () {
+    			}).then(() => {
     				return component.trigger("afterPopState");
     			});
     		});
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -916,10 +922,10 @@
     	 *
     	 * @return	{String}		State.
     	 */
-    	RouteOrganizer.__getState = function __getState (msg, options)
+    	static __getState(msg, options)
     	{
 
-    		var newState = {
+    		let newState = {
     			"msg": msg,
     		};
 
@@ -930,7 +936,7 @@
 
     		return newState;
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -942,15 +948,15 @@
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	RouteOrganizer.__fixRoute = function __fixRoute (component, url)
+    	static __fixRoute(component, url)
     	{
 
-    		var isOk = true;
-    		var newParams = RouteOrganizer._loadParameters(url);
+    		let isOk = true;
+    		let newParams = RouteOrganizer._loadParameters(url);
 
     		// Fix invalid paramters
-    		Object.keys(component.validationResult["invalids"]).forEach(function (key) {
-    			var item = component.validationResult["invalids"][key];
+    		Object.keys(component.validationResult["invalids"]).forEach((key) => {
+    			let item = component.validationResult["invalids"][key];
 
     			if (item["fix"] !== undefined)
     			{
@@ -975,7 +981,7 @@
     			component.validationResult["result"] = true;
     		}
 
-    	};
+    	}
 
     	// -----------------------------------------------------------------------------
 
@@ -984,15 +990,15 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 */
-    	RouteOrganizer.__dumpValidationErrors = function __dumpValidationErrors (component)
+    	static __dumpValidationErrors(component)
     	{
 
-    		Object.keys(component.validationResult["invalids"]).forEach(function (key) {
-    			var item = component.validationResult["invalids"][key];
+    		Object.keys(component.validationResult["invalids"]).forEach((key) => {
+    			let item = component.validationResult["invalids"][key];
 
     			if (item.failed)
     			{
-    				for (var i = 0; i < item.failed.length; i++)
+    				for (let i = 0; i < item.failed.length; i++)
     				{
     					console.warn("URL validation failed.",
     						"key=" + item.key +
@@ -1004,10 +1010,9 @@
     			}
     		});
 
-    	};
+    	}
 
-    	return RouteOrganizer;
-    }(BITSMIST.v1.Organizer));
+    }
 
     // =============================================================================
 
@@ -1046,11 +1051,9 @@
      */
     Router.prototype.start = function(settings)
     {
-    	var this$1$1 = this;
-
 
     	// Defaults
-    	var defaults = {
+    	let defaults = {
     		"settings": {
     			"name":						"Router",
     			"autoFixURL":				false,
@@ -1070,18 +1073,18 @@
     	};
     	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
 
-    	return Promise.resolve().then(function () {
+    	return Promise.resolve().then(() => {
     		// super()
-    		return BITSMIST.v1.Component.prototype.start.call(this$1$1, settings);
-    	}).then(function () {
+    		return BITSMIST.v1.Component.prototype.start.call(this, settings);
+    	}).then(() => {
     		// Load spec file
-    		return this$1$1.switchSpec(this$1$1.routeInfo["specName"]);
-    	}).then(function () {
+    		return this.switchSpec(this.routeInfo["specName"]);
+    	}).then(() => {
     		// Started
-    		return this$1$1._postStart();
-    	}).then(function () {
+    		return this._postStart();
+    	}).then(() => {
     		// Open route
-    		return this$1$1.openRoute();
+    		return this.openRoute();
     	});
 
     };
@@ -1091,5 +1094,5 @@
     BITSMIST.v1.OrganizerOrganizer.register("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":900});
     window.BITSMIST.v1.Router = Router;
 
-}());
+})();
 //# sourceMappingURL=bitsmist-js-router_v1.js.map

@@ -6,7 +6,7 @@ window.BITSMIST.v1 = window.BITSMIST.v1 || {};
 import RouteOrganizer from './organizer/route-organizer';
 BITSMIST.v1.OrganizerOrganizer.register("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":900});
 
-// Widget
+// Component
 
-import Router from "./widget/bm-router";
+import Router from "./component/bm-router";
 window.BITSMIST.v1.Router = Router;

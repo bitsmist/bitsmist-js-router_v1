@@ -33,52 +33,59 @@ BITSMIST.v1.ClassUtil.inherit(Router, BITSMIST.v1.Component);
 customElements.define("bm-router", Router);
 
 // -----------------------------------------------------------------------------
-//  Methods
+//  Protected
 // -----------------------------------------------------------------------------
 
-/**
- * Start component.
- *
- * @param	{Object}		settings			Settings.
- *
- * @return  {Promise}		Promise.
- */
-Router.prototype.start = function(settings)
+Router.prototype._getSettings = function(settings)
 {
 
-	// Defaults
 	let defaults = {
 		"settings": {
 			"name":						"Router",
 			"autoFixURL":				false,
 			"autoFetch":				false,
 			"autoSetup":				false,
-			"autoPostStart":			false,
 			"autoRefresh":				false,
 			"hasTemplate":				false,
 			"rootElement":				document.body,
-			"ignoreGlobalSuspend":		true,
 		},
 		"organizers": {
-			"AutoloadOrganizer":		{"settings":{"attach":false}},
 			"RouteOrganizer":			{"settings":{"attach":true}},
 			"ValidationOrganizer":		{"settings":{"attach":true}},
+		},
+		"events": {
+			"this": {
+				"handlers": {
+					"doStart": ["onDoStart"],
+					"afterStart": ["onAfterStart"]
+				}
+			}
 		}
 	};
-	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
 
-	return Promise.resolve().then(() => {
-		// super()
-		return BITSMIST.v1.Component.prototype.start.call(this, settings);
-	}).then(() => {
-		// Load spec file
+	settings = ( settings ? BITSMIST.v1.Util.deepMerge(settings, defaults) : defaults);
+
+	return settings;
+
+};
+
+// -----------------------------------------------------------------------------
+//  Event Handlers
+// -----------------------------------------------------------------------------
+
+Router.prototype.onDoStart = function(sender, e, ex)
+{
+
+	if (this.routeInfo["specName"])
+	{
 		return this.switchSpec(this.routeInfo["specName"]);
-	}).then(() => {
-		// Started
-		return this._postStart();
-	}).then(() => {
-		// Open route
-		return this.openRoute();
-	});
+	}
 
-}
+};
+
+Router.prototype.onAfterStart = function(sender, e, ex)
+{
+
+	return this.openRoute();
+
+};

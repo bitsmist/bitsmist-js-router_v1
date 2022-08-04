@@ -403,7 +403,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static _refreshRoute(component, routeInfo, options)
 	{
 
-		return component.refresh();
+		return component.refresh(options);
 
 	}
 
@@ -454,7 +454,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 				return RouteOrganizer.__fixRoute(component, url);
 			}
 		}).then(() => {
-			return component.trigger("doValidateURL");
+			return component.trigger("doValidate");
 		}).then(() => {
 			return component.trigger("afterValidate");
 		}).then(() => {
@@ -633,6 +633,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	 * Return history state.
 	 *
 	 * @param	{String}		msg					Message to store in state.
+	 * @param	{Object}		options				Optional values to store in state.
 	 *
 	 * @return	{String}		State.
 	 */
@@ -645,7 +646,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		if (options)
 		{
-			newState = Object.assign({}, options, newState);
+			newState = BITSMIST.v1.Util.deepMerge(BITSMIST.v1.Util.deepClone(options), newState);
 		}
 
 		return newState;

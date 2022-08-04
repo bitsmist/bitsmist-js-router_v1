@@ -689,7 +689,7 @@
     	static _refreshRoute(component, routeInfo, options)
     	{
 
-    		return component.refresh();
+    		return component.refresh(options);
 
     	}
 
@@ -740,7 +740,7 @@
     				return RouteOrganizer.__fixRoute(component, url);
     			}
     		}).then(() => {
-    			return component.trigger("doValidateURL");
+    			return component.trigger("doValidate");
     		}).then(() => {
     			return component.trigger("afterValidate");
     		}).then(() => {
@@ -819,8 +819,8 @@
     		console.debug(`RouteOrganizer._loadSpec(): Loading spec file. name=${component.name}, specName=${specName}, path=${path}`);
 
     		// Load specs
-    		let type = "js";
-    		promises.push(component.loadSettingFile(specName, path, type));
+    		let options = {"type": "js", "bindTo": this};
+    		promises.push(component.loadSettingFile(specName, path, options));
 
     		return Promise.all(promises).then((result) => {
     			spec = result[0];
@@ -919,6 +919,7 @@
     	 * Return history state.
     	 *
     	 * @param	{String}		msg					Message to store in state.
+    	 * @param	{Object}		options				Optional values to store in state.
     	 *
     	 * @return	{String}		State.
     	 */
@@ -931,7 +932,7 @@
 
     		if (options)
     		{
-    			newState = Object.assign({}, options, newState);
+    			newState = BITSMIST.v1.Util.deepMerge(BITSMIST.v1.Util.deepClone(options), newState);
     		}
 
     		return newState;
@@ -1039,53 +1040,72 @@
     customElements.define("bm-router", Router);
 
     // -----------------------------------------------------------------------------
-    //  Methods
+    //  Protected
     // -----------------------------------------------------------------------------
 
-    /**
-     * Start component.
-     *
-     * @param	{Object}		settings			Settings.
-     *
-     * @return  {Promise}		Promise.
-     */
-    Router.prototype.start = function(settings)
+    Router.prototype._getSettings = function(settings)
     {
 
-    	// Defaults
     	let defaults = {
     		"settings": {
     			"name":						"Router",
     			"autoFixURL":				false,
     			"autoFetch":				false,
     			"autoSetup":				false,
-    			"autoPostStart":			false,
     			"autoRefresh":				false,
     			"hasTemplate":				false,
     			"rootElement":				document.body,
-    			"ignoreGlobalSuspend":		true,
     		},
     		"organizers": {
-    			"AutoloadOrganizer":		{"settings":{"attach":false}},
     			"RouteOrganizer":			{"settings":{"attach":true}},
     			"ValidationOrganizer":		{"settings":{"attach":true}},
+    		},
+    		"events": {
+    			"this": {
+    				"handlers": {
+    					"doStart": ["onDoStart"],
+    					"afterStart": ["onAfterStart"]
+    				}
+    			}
     		}
     	};
-    	settings = ( settings ? BITSMIST.v1.Util.deepMerge(defaults, settings) : defaults);
 
-    	return Promise.resolve().then(() => {
-    		// super()
-    		return BITSMIST.v1.Component.prototype.start.call(this, settings);
-    	}).then(() => {
-    		// Load spec file
-    		return this.switchSpec(this.routeInfo["specName"]);
-    	}).then(() => {
-    		// Started
-    		return this._postStart();
-    	}).then(() => {
-    		// Open route
-    		return this.openRoute();
-    	});
+    	settings = ( settings ? BITSMIST.v1.Util.deepMerge(settings, defaults) : defaults);
+
+    	return settings;
+
+    };
+
+    // -----------------------------------------------------------------------------
+    //  Event Handlers
+    // -----------------------------------------------------------------------------
+
+    Router.prototype.onDoStart = function(sender, e, ex)
+    {
+
+    	if (this.routeInfo["specName"])
+    	{
+    		return this.switchSpec(this.routeInfo["specName"]).then(() => {
+    			// Load an extender if exists
+    			if (this.settings.get("settings.hasExtender"))
+    			{
+    				let fileName = this.routeInfo["specName"] + ".extender.js";
+    				let path = BITSMIST.v1.Util.concatPath([
+    					BITSMIST.v1.settings.get("system.appBaseUrl", ""),
+    					BITSMIST.v1.settings.get("system.specPath", ""),
+    				]);
+
+    				return BITSMIST.v1.AjaxUtil.loadScript(path + fileName);
+    			}
+    		});
+    	}
+
+    };
+
+    Router.prototype.onAfterStart = function(sender, e, ex)
+    {
+
+    	return this.openRoute();
 
     };
 

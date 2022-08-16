@@ -326,7 +326,7 @@
 
     		// Add methods
     		component.loadParameters = function(url) { return RouteOrganizer._loadParameters(url); };
-    		component.switchSpec = function(specName) { return RouteOrganizer._switchSpec(this, specName); };
+    		component.switchSpec = function(specName, options) { return RouteOrganizer._switchSpec(this, specName, options); };
     		component.openRoute = function(routeInfo, options) { return RouteOrganizer._open(this, routeInfo, options); };
     		component.jumpRoute = function(routeInfo, options) { return RouteOrganizer._jumpRoute(this, routeInfo, options); };
     		component.updateRoute = function(routeInfo, options) { return RouteOrganizer._updateRoute(this, routeInfo, options); };
@@ -364,7 +364,7 @@
     	{
 
     		// Load settings from attributes
-    		RouteOrganizer.__loadAttrSettings(component);
+    		RouteOrganizer._loadAttrSettings(component);
 
     		// Load route info
     		let routes = settings["routes"];
@@ -536,10 +536,11 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 * @param	{String}		specName			Spec name.
+    	 * @param	{Object}		options				Options.
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
-    	static _switchSpec(component, specName)
+    	static _switchSpec(component, specName, options)
     	{
 
     		BITSMIST.v1.Util.assert(specName, "RouteOrganizer._switchSpec(): A spec name not specified.", TypeError);
@@ -547,13 +548,19 @@
     		return Promise.resolve().then(() => {
     			if (!component._specs[specName])
     			{
-    				return RouteOrganizer.__loadSpec(component, specName, component.settings.get("system.specPath")).then((spec) => {					component._specs[specName] = spec;
+    				return RouteOrganizer._loadSpec(component, specName, options).then((spec) => {
+    					component._specs[specName] = spec;
     				});
     			}
     		}).then(() => {
     			component._spec.items = component._specs[specName];
     		}).then(() => {
     			return component.addOrganizers(component._specs[specName]);
+    		}).then(() => {
+    			if (component.settings.get("settings.hasExtender"))
+    			{
+    				return RouteOrganizer._loadExtender(component, specName, options);
+    			}
     		}).then(() => {
     			return component.callOrganizers("afterSpecLoad", component._specs[specName]);
     		}).then(() => {
@@ -569,7 +576,7 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 * @param	{Object}		routeInfo			Route information.
-    	 * @param	{Object}		options				Query options.
+    	 * @param	{Object}		options				Options.
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
@@ -629,6 +636,7 @@
     		});
 
     	}
+
     	// -----------------------------------------------------------------------------
 
     	/**
@@ -636,7 +644,7 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 * @param	{Object}		routeInfo			Route information.
-    	 * @param	{Object}		options				Query options.
+    	 * @param	{Object}		options				Options.
     	 */
     	static _jumpRoute(component, routeInfo, options)
     	{
@@ -653,7 +661,7 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 * @param	{Object}		routeInfo			Route information.
-    	 * @param	{Object}		options				Query options.
+    	 * @param	{Object}		options				Options.
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
@@ -682,7 +690,7 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 * @param	{Object}		routeInfo			Route information.
-    	 * @param	{Object}		options				Query options.
+    	 * @param	{Object}		options				Options.
     	 *
     	 * @return 	{Promise}		Promise.
     	 */
@@ -700,7 +708,7 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 * @param	{Object}		routeInfo			Route information.
-    	 * @param	{Object}		options				Query options.
+    	 * @param	{Object}		options				Options.
     	 */
     	static _replaceRoute(component, routeInfo, options)
     	{
@@ -778,22 +786,20 @@
     	}
 
     	// -------------------------------------------------------------------------
-    	//  Privates
-    	// -------------------------------------------------------------------------
 
     	/**
     	 * Get settings from element's attribute.
     	 *
     	 * @param	{Component}		component			Component.
     	 */
-    	static __loadAttrSettings(component)
+    	static _loadAttrSettings(component)
     	{
 
     		// Get spec path from  bm-specpath
     		let path = component.getAttribute("bm-specpath");
     		if (path)
     		{
-    			component.settings.set("system.specPath", path);
+    			component.settings.set("loadings.specPath", path);
     		}
 
     	}
@@ -805,21 +811,29 @@
     	 *
     	 * @param	{Component}		component			Component.
     	 * @param	{String}		specName			Spec name.
-    	 * @param	{String}		path				Path to spec.
+    	 * @param	{Object}		loadOptions			Load options.
     	 *
     	 * @return  {Promise}		Promise.
     	 */
-    	static __loadSpec(component, specName, path)
+    	static _loadSpec(component, specName, loadOptions)
     	{
 
     		let spec;
     //		let specCommon;
     		let promises = [];
 
-    		console.debug(`RouteOrganizer._loadSpec(): Loading spec file. name=${component.name}, specName=${specName}, path=${path}`);
+    		console.debug(`RouteOrganizer._loadSpec(): Loading spec file. name=${component.name}, specName=${specName}`);
+
+    		// Path
+    		let path = BITSMIST.v1.Util.safeGet(loadOptions, "path",
+    			BITSMIST.v1.Util.concatPath([
+    				component.settings.get("loadings.appBaseUrl", BITSMIST.v1.settings.get("system.appBaseUrl", "")),
+    				component.settings.get("loadings.specPath", BITSMIST.v1.settings.get("system.specPath", ""))
+    			])
+    		);
 
     		// Load specs
-    		let options = {"type": "js", "bindTo": this};
+    		let options = BITSMIST.v1.Util.deepMerge({"type": "js", "bindTo": this}, loadOptions);
     		promises.push(component.loadSettingFile(specName, path, options));
 
     		return Promise.all(promises).then((result) => {
@@ -833,6 +847,37 @@
     	}
 
     	// -----------------------------------------------------------------------------
+
+    	/**
+    	 * Load the extender file for this page.
+    	 *
+    	 * @param	{Component}		component			Component.
+    	 * @param	{String}		specName			Spec name.
+    	 * @param	{Object}		loadOptions			Load options.
+    	 *
+    	 * @return  {Promise}		Promise.
+    	 */
+    	static _loadExtender(component, extenderName, loadOptions)
+    	{
+
+    		console.debug(`RouteOrganizer._loadExtender(): Loading extender file. name=${component.name}, extenderName=${extenderName}`);
+
+    		let query = BITSMIST.v1.Util.safeGet(loadOptions, "query");
+    		let path = BITSMIST.v1.Util.safeGet(loadOptions, "path",
+    			BITSMIST.v1.Util.concatPath([
+    				component.settings.get("loadings.appBaseUrl", BITSMIST.v1.settings.get("system.appBaseUrl", "")),
+    				component.settings.get("loadings.specPath", BITSMIST.v1.settings.get("system.specPath", ""))
+    			])
+    		);
+    		let url = path + extenderName + ".extender.js" + (query ? "?" + query : "");
+
+    		return BITSMIST.v1.AjaxUtil.loadScript(url);
+
+    	}
+
+    	// -------------------------------------------------------------------------
+    	//  Privates
+    	// -------------------------------------------------------------------------
 
     	/**
     	 * Get route info from the url.
@@ -1085,19 +1130,11 @@
 
     	if (this.routeInfo["specName"])
     	{
-    		return this.switchSpec(this.routeInfo["specName"]).then(() => {
-    			// Load an extender if exists
-    			if (this.settings.get("settings.hasExtender"))
-    			{
-    				let fileName = this.routeInfo["specName"] + ".extender.js";
-    				let path = BITSMIST.v1.Util.concatPath([
-    					BITSMIST.v1.settings.get("system.appBaseUrl", ""),
-    					BITSMIST.v1.settings.get("system.specPath", ""),
-    				]);
+    		let options = {
+    			"query": this.settings.get("loadings.query")
+    		};
 
-    				return BITSMIST.v1.AjaxUtil.loadScript(path + fileName);
-    			}
-    		});
+    		return this.switchSpec(this.routeInfo["specName"], options);
     	}
 
     };

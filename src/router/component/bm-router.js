@@ -78,7 +78,11 @@ Router.prototype.onDoStart = function(sender, e, ex)
 
 	if (this.routeInfo["specName"])
 	{
-		return this.switchSpec(this.routeInfo["specName"]);
+		let options = {
+			"query": this.settings.get("loadings.query")
+		};
+
+		return this.switchSpec(this.routeInfo["specName"], options);
 	}
 
 };

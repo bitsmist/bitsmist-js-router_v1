@@ -51,7 +51,7 @@ Router.prototype._getSettings = function(settings)
 		},
 		"organizers": {
 			"RouteOrganizer":			{"settings":{"attach":true}},
-			"ValidationOrganizer":		{"settings":{"attach":true}},
+			"FormOrganizer":			{"settings":{"attach":true}},
 		},
 		"events": {
 			"this": {

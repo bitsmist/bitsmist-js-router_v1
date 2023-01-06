@@ -56,8 +56,8 @@ Router.prototype._getSettings = function(settings)
 		"events": {
 			"this": {
 				"handlers": {
-					"doStart": ["onDoStart"],
-					"afterStart": ["onAfterStart"]
+					"doStart": 			["onDoStart"],
+					"afterStart": 		["onAfterStart"]
 				}
 			}
 		}

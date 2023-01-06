@@ -451,7 +451,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}).then(() => {
 			// Validate URL (by organizers)
 			return component.callOrganizers("doCheckValidity", {
-				"item":				RouteOrganizer._loadParameters(url),
+				"items":			RouteOrganizer._loadParameters(url),
 				"validationName":	component.settings.get("settings.validationName")
 			});
 		}).then(() => {

@@ -21,23 +21,15 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	//  Methods
 	// -------------------------------------------------------------------------
 
-	/**
-	 * Init.
-	 *
-	 * @param	{Component}		component			Component.
-	 * @param	{Object}		settings			Settings.
-	 *
-	 * @return 	{Promise}		Promise.
-	 */
-	static init(component, settings)
+	static attach(component, options)
 	{
 
-		// Add properties
+		// Add properties to component
 		Object.defineProperty(component, 'routeInfo', { get() { return this._routeInfo; }, });
 		Object.defineProperty(component, 'specs', { get() { return this._specs; }, });
 		Object.defineProperty(component, 'spec', { get() { return this._spec; }, });
 
-		// Add methods
+		// Add methods to component
 		component.loadParameters = function(url) { return RouteOrganizer._loadParameters(url); }
 		component.switchSpec = function(specName, options) { return RouteOrganizer._switchSpec(this, specName, options); }
 		component.openRoute = function(routeInfo, options) { return RouteOrganizer._open(this, routeInfo, options); }
@@ -48,11 +40,14 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		component.validateRoute = function() { return RouteOrganizer._validateRoute(this); }
 		component.normalizeRoute = function() { return RouteOrganizer._normalizeRoute(this); }
 
-		// Init vars
+		// Init component vars
 		component._routes = [];
 		component._specs = {};
 		component._spec = new BITSMIST.v1.ChainableStore({"chain":component.settings, "writeThrough":true});
 		Object.defineProperty(component, "settings", { get() { return this._spec; }, }); // Tweak to see settings through spec
+
+		// Add event handlers to component
+		this._addOrganizerHandler(component, "beforeStart", RouteOrganizer.onBeforeStart);
 
 		// Init popstate handler
 		RouteOrganizer.__initPopState(component);
@@ -63,41 +58,34 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	}
 
 	// -------------------------------------------------------------------------
+	//  Event handlers
+	// -------------------------------------------------------------------------
 
-	/**
-	 * Organizer.
-	 *
-	 * @param	{Object}		conditions			Conditions.
-	 * @param	{Component}		component			Component.
-	 * @param	{Object}		settings			Settings.
-	 *
-	 * @return 	{Promise}		Promise.
-	 */
-	static organize(conditions, component, settings)
+	static onBeforeStart(sender, e, ex)
 	{
 
 		// Load settings from attributes
-		RouteOrganizer._loadAttrSettings(component);
+		RouteOrganizer._loadAttrSettings(this);
 
 		// Load route info
-		let routes = settings["routes"];
+		let routes = this.settings.get("routes");
 		if (routes)
 		{
 			for(let i = 0; i < routes.length; i++)
 			{
-				RouteOrganizer._addRoute(component, routes[i]);
+				RouteOrganizer._addRoute(this, routes[i]);
 			}
 		}
 
 		// Set current route info.
-		component._routeInfo = RouteOrganizer.__loadRouteInfo(component, window.location.href);
+		this._routeInfo = RouteOrganizer.__loadRouteInfo(this, window.location.href);
 
 		// Load spec info
-		let specs = component.settings.get("specs");
+		let specs = this.settings.get("specs");
 		if (specs)
 		{
 			Object.keys(specs).forEach((key) => {
-				component._specs[key] = specs[key];
+				this._specs[key] = specs[key];
 			});
 		}
 
@@ -268,14 +256,12 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}).then(() => {
 			component._spec.items = component._specs[specName];
 		}).then(() => {
-			return component.addOrganizers(component._specs[specName]);
+			return component.attachOrganizers(component._specs[specName]);
 		}).then(() => {
 			if (component.settings.get("settings.hasExtender"))
 			{
 				return RouteOrganizer._loadExtender(component, specName, options);
 			}
-		}).then(() => {
-			return component.callOrganizers("afterSpecLoad", component._specs[specName]);
 		}).then(() => {
 			return component.trigger("afterSpecLoad", {"spec":component._specs[component._routeInfo["specName"]]});
 		});
@@ -384,10 +370,6 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		return Promise.resolve().then(() => {
 			return component.changeState("routing");
 		}).then(() => {
-			return component.clearOrganizers("afterStart", component._specs[curRouteInfo["specName"]]);
-		}).then(() => {
-			return component.clearOrganizers("afterSpecLoad", component._specs[curRouteInfo["specName"]]);
-		}).then(() => {
 			return RouteOrganizer._switchSpec(component, newRouteInfo["specName"]);
 		}).then(() => {
 			// Started
@@ -449,19 +431,13 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		return Promise.resolve().then(() => {
 			return component.trigger("beforeValidate");
 		}).then(() => {
-			// Validate URL (by organizers)
-			return component.callOrganizers("doCheckValidity", {
-				"items":			RouteOrganizer._loadParameters(url),
-				"validationName":	component.settings.get("settings.validationName")
-			});
+			return component.trigger("doValidate", {"items": RouteOrganizer._loadParameters(url)});
 		}).then(() => {
 			// Fix URL
 			if (!component.validationResult["result"] && component.settings.get("settings.autoFixURL"))
 			{
 				return RouteOrganizer.__fixRoute(component, url);
 			}
-		}).then(() => {
-			return component.trigger("doValidate");
 		}).then(() => {
 			return component.trigger("afterValidate");
 		}).then(() => {
@@ -547,7 +523,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		// Load specs
 		let options = BITSMIST.v1.Util.deepMerge({"type": "js", "bindTo": this}, loadOptions);
-		promises.push(component.loadSettingFile(specName, path, options));
+		promises.push(BITSMIST.v1.SettingOrganizer.loadFile(specName, path, options));
 
 		return Promise.all(promises).then((result) => {
 			spec = result[0];

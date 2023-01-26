@@ -4,7 +4,8 @@ window.BITSMIST.v1 = window.BITSMIST.v1 || {};
 // Organizer
 
 import RouteOrganizer from './organizer/route-organizer';
-BITSMIST.v1.OrganizerOrganizer.register("RouteOrganizer", {"object":RouteOrganizer, "targetWords":"routes", "targetEvents":["beforeStart", "afterSpecLoad"], "order":900});
+window.BITSMIST.v1.RouteOrganizer = RouteOrganizer;
+BITSMIST.v1.OrganizerOrganizer.register(window.BITSMIST.v1.RouteOrganizer);
 
 // Component
 

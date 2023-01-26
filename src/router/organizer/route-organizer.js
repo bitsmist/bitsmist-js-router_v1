@@ -21,6 +21,19 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	//  Methods
 	// -------------------------------------------------------------------------
 
+	static getInfo()
+	{
+
+		return {
+			"name":			"RouteOrganizer",
+			"targetWords":	"routes",
+			"order":		900,
+		};
+
+	}
+
+	// -------------------------------------------------------------------------
+
 	static attach(component, options)
 	{
 
@@ -256,7 +269,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		}).then(() => {
 			component._spec.items = component._specs[specName];
 		}).then(() => {
-			return component.attachOrganizers(component._specs[specName]);
+			return component.attachOrganizers({"settings":component._specs[specName]});
 		}).then(() => {
 			if (component.settings.get("settings.hasExtender"))
 			{

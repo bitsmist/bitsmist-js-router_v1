@@ -1,11 +1,10 @@
-window.BITSMIST = window.BITSMIST || {};
-window.BITSMIST.v1 = window.BITSMIST.v1 || {};
+import BM from "./bm";
 
 // Organizer
 
-import RouteOrganizer from './organizer/route-organizer';
+import RouteOrganizer from "./organizer/route-organizer";
 window.BITSMIST.v1.RouteOrganizer = RouteOrganizer;
-BITSMIST.v1.OrganizerOrganizer.register(window.BITSMIST.v1.RouteOrganizer);
+BM.OrganizerOrganizer.register(RouteOrganizer);
 
 // Component
 

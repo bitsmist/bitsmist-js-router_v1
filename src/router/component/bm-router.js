@@ -8,6 +8,7 @@
  */
 // =============================================================================
 
+import BM from "../bm";
 import RouteOrganizer from "../organizer/route-organizer.js";
 
 // =============================================================================
@@ -25,11 +26,11 @@ export default function Router()
 {
 
 	// super()
-	return Reflect.construct(BITSMIST.v1.Component, [], this.constructor);
+	return Reflect.construct(BM.Component, [], this.constructor);
 
 }
 
-BITSMIST.v1.ClassUtil.inherit(Router, BITSMIST.v1.Component);
+BM.ClassUtil.inherit(Router, BM.Component);
 customElements.define("bm-router", Router);
 
 // -----------------------------------------------------------------------------
@@ -63,7 +64,7 @@ Router.prototype._getSettings = function(settings)
 		}
 	};
 
-	settings = ( settings ? BITSMIST.v1.Util.deepMerge(settings, defaults) : defaults);
+	settings = ( settings ? BM.Util.deepMerge(settings, defaults) : defaults);
 
 	return settings;
 

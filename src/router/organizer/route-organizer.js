@@ -8,13 +8,14 @@
  */
 // =============================================================================
 
-import { pathToRegexp } from 'path-to-regexp';
+import BM from "../bm";
+import { pathToRegexp } from "path-to-regexp";
 
 // =============================================================================
 //	Route organizer class
 // =============================================================================
 
-export default class RouteOrganizer extends BITSMIST.v1.Organizer
+export default class RouteOrganizer extends BM.Organizer
 {
 
 	// -------------------------------------------------------------------------
@@ -56,7 +57,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		// Init component vars
 		component._routes = [];
 		component._specs = {};
-		component._spec = new BITSMIST.v1.ChainableStore({"chain":component.settings, "writeThrough":true});
+		component._spec = new BM.ChainableStore({"chain":component.settings, "writeThrough":true});
 		Object.defineProperty(component, "settings", { get() { return this._spec; }, }); // Tweak to see settings through spec
 
 		// Add event handlers to component
@@ -257,7 +258,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	static _switchSpec(component, specName, options)
 	{
 
-		BITSMIST.v1.Util.assert(specName, "RouteOrganizer._switchSpec(): A spec name not specified.", TypeError);
+		BM.Util.assert(specName, "RouteOrganizer._switchSpec(): A spec name not specified.", TypeError);
 
 		return Promise.resolve().then(() => {
 			if (!component._specs[specName])
@@ -296,7 +297,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 	{
 
 		options = Object.assign({}, options);
-		let pushState = BITSMIST.v1.Util.safeGet(options, "pushState", ( routeInfo ? true : false ));
+		let pushState = BM.Util.safeGet(options, "pushState", ( routeInfo ? true : false ));
 
 		// Current route info
 		let curRouteInfo = component._routeInfo;
@@ -527,21 +528,21 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 		console.debug(`RouteOrganizer._loadSpec(): Loading spec file. name=${component.name}, specName=${specName}`);
 
 		// Path
-		let path = BITSMIST.v1.Util.safeGet(loadOptions, "path",
-			BITSMIST.v1.Util.concatPath([
-				component.settings.get("loadings.appBaseUrl", BITSMIST.v1.settings.get("system.appBaseUrl", "")),
-				component.settings.get("loadings.specPath", BITSMIST.v1.settings.get("system.specPath", ""))
+		let path = BM.Util.safeGet(loadOptions, "path",
+			BM.Util.concatPath([
+				component.settings.get("loadings.appBaseUrl", BM.settings.get("system.appBaseUrl", "")),
+				component.settings.get("loadings.specPath", BM.settings.get("system.specPath", ""))
 			])
 		);
 
 		// Load specs
-		let options = BITSMIST.v1.Util.deepMerge({"type": "js", "bindTo": this}, loadOptions);
-		promises.push(BITSMIST.v1.SettingOrganizer.loadFile(specName, path, options));
+		let options = BM.Util.deepMerge({"type": "js", "bindTo": this}, loadOptions);
+		promises.push(BM.SettingOrganizer.loadFile(specName, path, options));
 
 		return Promise.all(promises).then((result) => {
 			spec = result[0];
 //			specCommon = result[0];
-//			spec = BITSMIST.v1.Util.deepMerge(specCommon, result[1]);
+//			spec = BM.Util.deepMerge(specCommon, result[1]);
 
 			return spec;
 		});
@@ -564,16 +565,16 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		console.debug(`RouteOrganizer._loadExtender(): Loading extender file. name=${component.name}, extenderName=${extenderName}`);
 
-		let query = BITSMIST.v1.Util.safeGet(loadOptions, "query");
-		let path = BITSMIST.v1.Util.safeGet(loadOptions, "path",
-			BITSMIST.v1.Util.concatPath([
-				component.settings.get("loadings.appBaseUrl", BITSMIST.v1.settings.get("system.appBaseUrl", "")),
-				component.settings.get("loadings.specPath", BITSMIST.v1.settings.get("system.specPath", ""))
+		let query = BM.Util.safeGet(loadOptions, "query");
+		let path = BM.Util.safeGet(loadOptions, "path",
+			BM.Util.concatPath([
+				component.settings.get("loadings.appBaseUrl", BM.settings.get("system.appBaseUrl", "")),
+				component.settings.get("loadings.specPath", BM.settings.get("system.specPath", ""))
 			])
 		);
 		let url = path + extenderName + ".extender.js" + (query ? "?" + query : "");
 
-		return BITSMIST.v1.AjaxUtil.loadScript(url);
+		return BM.AjaxUtil.loadScript(url);
 
 	}
 
@@ -679,7 +680,7 @@ export default class RouteOrganizer extends BITSMIST.v1.Organizer
 
 		if (options)
 		{
-			newState = BITSMIST.v1.Util.deepMerge(BITSMIST.v1.Util.deepClone(options), newState);
+			newState = BM.Util.deepMerge(BM.Util.deepClone(options), newState);
 		}
 
 		return newState;

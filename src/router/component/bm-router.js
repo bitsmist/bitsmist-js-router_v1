@@ -58,7 +58,7 @@ Router.prototype._getSettings = function(settings)
 			"this": {
 				"handlers": {
 					"doStart": 			["onDoStart"],
-					"afterStart": 		["onAfterStart"]
+					"afterReady": 		["onAfterReady"]
 				}
 			}
 		}
@@ -88,7 +88,7 @@ Router.prototype.onDoStart = function(sender, e, ex)
 
 };
 
-Router.prototype.onAfterStart = function(sender, e, ex)
+Router.prototype.onAfterReady = function(sender, e, ex)
 {
 
 	return this.openRoute();

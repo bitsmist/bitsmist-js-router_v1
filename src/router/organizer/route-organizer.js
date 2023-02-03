@@ -19,6 +19,17 @@ export default class RouteOrganizer extends BM.Organizer
 {
 
 	// -------------------------------------------------------------------------
+	//  Setter/Getter
+	// -------------------------------------------------------------------------
+
+	static get name()
+	{
+
+		return "RouteOrganizer";
+
+	}
+
+	// -------------------------------------------------------------------------
 	//  Methods
 	// -------------------------------------------------------------------------
 
@@ -26,7 +37,6 @@ export default class RouteOrganizer extends BM.Organizer
 	{
 
 		return {
-			"name":			"RouteOrganizer",
 			"targetWords":	"routes",
 			"order":		900,
 		};

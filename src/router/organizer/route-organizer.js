@@ -275,7 +275,7 @@ export default class RouteOrganizer extends BM.Organizer
 				return RouteOrganizer._loadExtender(component, specName, options);
 			}
 		}).then(() => {
-			return component.trigger("doAttachOrganizer", {"settings":component._specs[component._routeInfo["specName"]]});
+			return component.attachOrganizers({"settings":component._specs[component._routeInfo["specName"]]});
 		}).then(() => {
 			return component.trigger("afterLoadSettings", {"settings":component._specs[component._routeInfo["specName"]]});
 		});

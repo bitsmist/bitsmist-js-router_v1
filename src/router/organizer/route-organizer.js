@@ -35,7 +35,7 @@ export default class RouteOrganizer extends BM.Organizer
 
 	// -------------------------------------------------------------------------
 
-	static attach(component, options)
+	static init(component, options)
 	{
 
 		// Add properties to component

@@ -514,7 +514,7 @@ export default class RouteOrganizer extends BM.Organizer
 		let path = component.getAttribute("bm-specpath");
 		if (path)
 		{
-			component.settings.set("loadings.specPath", path);
+			component.settings.set("system.specPath", path);
 		}
 
 	}
@@ -542,8 +542,8 @@ export default class RouteOrganizer extends BM.Organizer
 		// Path
 		let path = BM.Util.safeGet(loadOptions, "path",
 			BM.Util.concatPath([
-				component.settings.get("loadings.appBaseUrl", BM.settings.get("system.appBaseUrl", "")),
-				component.settings.get("loadings.specPath", BM.settings.get("system.specPath", ""))
+				component.settings.get("system.appBaseUrl", ""),
+				component.settings.get("system.specPath", "")
 			])
 		);
 
@@ -580,8 +580,8 @@ export default class RouteOrganizer extends BM.Organizer
 		let query = BM.Util.safeGet(loadOptions, "query");
 		let path = BM.Util.safeGet(loadOptions, "path",
 			BM.Util.concatPath([
-				component.settings.get("loadings.appBaseUrl", BM.settings.get("system.appBaseUrl", "")),
-				component.settings.get("loadings.specPath", BM.settings.get("system.specPath", ""))
+				component.settings.get("system.appBaseUrl", ""),
+				component.settings.get("system.specPath", "")
 			])
 		);
 		let url = path + extenderName + ".extender.js" + (query ? "?" + query : "");

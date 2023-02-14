@@ -47,8 +47,12 @@ Router.prototype._getSettings = function(settings)
 			"autoFetch":				false,
 			"autoSetup":				false,
 			"autoRefresh":				false,
-			"hasTemplate":				false,
 			"rootElement":				document.body,
+		},
+		"templates": {
+			"settings": {
+				"hasTemplate":			false,
+			}
 		},
 		"organizers": {
 			"RouteOrganizer":			{"settings":{"attach":true}},
